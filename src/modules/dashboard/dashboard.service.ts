@@ -40,6 +40,7 @@ export const getTerminalJobs = async (terminalId: number) => {
             // 2. Iterar para obtener historial (mensaje) y formatear
             for (const job of enabledJobs) {
                 let lastMessage = '';
+                let durationFormatted = '00:00:00';
 
                 // Obtener historial reciente para el mensaje
                 try {
@@ -49,21 +50,34 @@ export const getTerminalJobs = async (terminalId: number) => {
                         .execute('msdb.dbo.sp_help_jobhistory');
 
                     if (historyResult.recordset.length > 0) {
-                        lastMessage = historyResult.recordset[0].message;
+                        const lastHistory = historyResult.recordset[0];
+                        lastMessage = lastHistory.message;
+
+                        // Obtener duración real del historial
+                        if (lastHistory.run_duration > 0) {
+                            const durStr = lastHistory.run_duration.toString().padStart(6, '0');
+                            // SQL Server duration is HHMMSS as int, e.g. 10230 = 1:02:30
+                            const hrs = durStr.substring(0, 2);
+                            const min = durStr.substring(2, 4);
+                            const sec = durStr.substring(4, 6);
+                            durationFormatted = `${hrs}:${min}:${sec}`;
+                        }
                     }
                 } catch (e) { console.error(`Error fetching history for job ${job.name}`, e); }
 
-                // Determinar Estado
-                // current_execution_status: 1=Executing, 2=Waiting, 3=Retry, 4=Idle, 5=Suspended, 7=Completion
-                // last_run_outcome: 0=Failed, 1=Succeeded, 3=Canceled, 5=Unknown
-                let status = 'Desconocido';
-                if (job.current_execution_status === 1) status = 'En Ejecución';
-                else if (job.last_run_outcome === 1) status = 'Exitoso';
-                else if (job.last_run_outcome === 0) status = 'Fallido';
-                else if (job.last_run_outcome === 3) status = 'Cancelado';
-                else if (job.last_run_outcome === 5) status = 'Desconocido';
+                // 1. Execution Status
+                let executionStatus = 'Idle';
+                if (job.current_execution_status === 1) executionStatus = 'Running';
 
-                // Formatear Fecha (YYYYMMDD -> Date)
+                // 2. Last Outcome
+                let lastOutcome = 'Desconocido';
+                if (job.last_run_outcome === 1) lastOutcome = 'Exitoso';
+                else if (job.last_run_outcome === 0) lastOutcome = 'Fallido';
+                else if (job.last_run_outcome === 3) lastOutcome = 'Cancelado';
+
+
+
+                // 4. Last Run Date
                 let lastRunDate = null;
                 if (job.last_run_date > 0) {
                     const dStr = job.last_run_date.toString();
@@ -82,8 +96,10 @@ export const getTerminalJobs = async (terminalId: number) => {
 
                 mappedJobs.push({
                     JobName: job.name,
-                    LastStatus: status,
-                    LastRunDate: lastRunDate, // El cliente JS espera Date o String ISO
+                    ExecutionStatus: executionStatus,
+                    LastOutcome: lastOutcome,
+                    LastDuration: durationFormatted,
+                    LastRunDate: lastRunDate,
                     LastMessage: lastMessage
                 });
             }
@@ -97,24 +113,28 @@ export const getTerminalJobs = async (terminalId: number) => {
                 SELECT 
                     j.name AS JobName,
                     CASE 
-                        WHEN ja.start_execution_date IS NOT NULL AND ja.stop_execution_date IS NULL THEN 'En Ejecución'
+                        WHEN ja.start_execution_date IS NOT NULL AND ja.stop_execution_date IS NULL THEN 'Running'
+                        ELSE 'Idle'
+                    END AS ExecutionStatus,
+                    CASE 
                         WHEN h.run_status = 1 THEN 'Exitoso'
                         WHEN h.run_status = 0 THEN 'Fallido'
                         WHEN h.run_status = 2 THEN 'Reintentar'
                         WHEN h.run_status = 3 THEN 'Cancelado'
                         ELSE 'Desconocido' 
-                    END AS LastStatus,
+                    END AS LastOutcome,
                     CASE
                         WHEN ja.start_execution_date IS NOT NULL AND ja.stop_execution_date IS NULL THEN ja.start_execution_date
                         ELSE msdb.dbo.agent_datetime(h.run_date, h.run_time) 
                     END AS LastRunDate,
+                    STUFF(STUFF(RIGHT('000000' + CAST(h.run_duration AS VARCHAR(6)), 6), 3, 0, ':'), 6, 0, ':') AS LastDuration,
                     h.message AS LastMessage
                 FROM msdb.dbo.sysjobs j
                 LEFT JOIN msdb.dbo.sysjobactivity ja 
                     ON j.job_id = ja.job_id
                     AND ja.session_id = (SELECT TOP 1 session_id FROM msdb.dbo.syssessions ORDER BY session_id DESC)
                 OUTER APPLY (
-                    SELECT TOP 1 run_status, run_date, run_time, message
+                    SELECT TOP 1 run_status, run_date, run_time, run_duration, message
                     FROM msdb.dbo.sysjobhistory jh
                     WHERE jh.job_id = j.job_id
                     ORDER BY run_date DESC, run_time DESC

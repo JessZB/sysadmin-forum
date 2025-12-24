@@ -266,16 +266,14 @@
 
         <div class="tab-pane fade" id="matrix-view" role="tabpanel">
             <div class="row">
-                <div class="mb-4 col-4">
+                <div class="mb-4 col-12 col-xl-6" style="max-width: 460px;">
                     <h6 class="text-uppercase text-muted fw-bold small ls-1">Servidor Principal</h6>
                     <div class="row g-4" id="server-matrix"></div>
                 </div>
 
-                <hr class="my-4 opacity-25">
-
-                <div class="col-8">
+                <div class="col-12 col-xl-6" style="max-width: 600px;">
                     <h6 class="text-uppercase text-muted fw-bold small ls-1">Detalle POS</h6>
-                    <div class="row g-4" id="matrix-grid"></div>
+                    <div class="row g-4 border border-1" id="matrix-grid"></div>
                 </div>
             </div>
 
@@ -300,7 +298,7 @@
         </div>
     </div> -->
     <div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header header-loading" id="modalHeader">
                     <h5 class="modal-title" id="modalTitle">Cargando...</h5>

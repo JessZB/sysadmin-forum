@@ -141,8 +141,8 @@ async function cargarDatos() {
         servers.forEach(srv => {
             // Grid Tab
             serverGrid.appendChild(crearTarjetaServidorHTML(srv));
-            // Matrix Tab (Usamos col-md-6 para que sea más ancha)
-            serverMatrix.appendChild(crearTablaMatrizHTML(srv, 'col-md-6 col-xl-6'));
+            // Matrix Tab (Usamos col-12 para que sea más ancha)
+            serverMatrix.appendChild(crearTablaMatrizHTML(srv, 'col-12'));
         });
 
         // 2. RENDERIZAR CAJAS (Diseño Estándar)
@@ -150,7 +150,7 @@ async function cargarDatos() {
         
         terminals.forEach(term => {
             posGrid.appendChild(crearTarjetaHTML(term));
-            posMatrix.appendChild(crearTablaMatrizHTML(term));
+            posMatrix.appendChild(crearTablaMatrizHTML(term, 'col-12 mt-0', 'd-flex flex-row'));
         });
 
         // 3. CONSULTAR ESTADOS (Para todos)
@@ -174,21 +174,21 @@ function crearTarjetaServidorHTML(term) {
             <div class="d-flex w-100 h-100 align-items-center px-4 position-relative">
                 
                 <div class="me-4" id="icon-${term.id}" style="font-size: 2.5rem;">
-                    <i class="fa-solid fa-circle-notch fa-spin text-secondary"></i>
+                    <i class="fa-solid fa-circle-notch fa-spin text-white opacity-75"></i>
                 </div>
 
                 <div class="flex-grow-1" style="z-index: 2;">
-                    <h5 class="fw-bold text-dark mb-1">${term.name}</h5>
-                    <div class="d-flex align-items-center text-muted mb-2">
+                    <h5 class="fw-bold mb-1 text-white">${term.name}</h5>
+                    <div class="d-flex align-items-center mb-2 text-white opacity-90">
                         <i class="fa-solid fa-network-wired me-2 small"></i>
                         <span class="font-monospace">${term.ip_address}</span>
                     </div>
-                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">
+                    <span class="badge bg-white bg-opacity-25 text-white border border-white border-opacity-50 fw-semibold">
                         MASTER NODE
                     </span>
                 </div>
 
-                <i class="fa-solid fa-server server-icon-large"></i>
+                <i class="fa-solid fa-server server-icon-large text-white opacity-10"></i>
 
                 <div class="hover-overlay" style="border-radius: 10px;">
                     <button class="view-details-btn shadow" onclick="abrirModalDetalle(${term.id}, '${term.name}', '${term.ip_address}', true)">
@@ -239,7 +239,7 @@ async function consultarCajaIndividual(id) {
    ========================================= */
 function crearTarjetaHTML(term) {
     const col = document.createElement('div');
-    col.className = 'col-12 col-sm-6 col-md-3';
+    col.className = 'col-12 col-sm-6 col-md-2';
     col.innerHTML = `
         <div class="pos-card status-loading" id="card-${term.id}">
             <div class="pos-icon" id="icon-${term.id}"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
@@ -272,21 +272,31 @@ function actualizarTarjetaVisual(id, status) {
 /* =========================================
    TAB 2: MATRIZ DETALLADA
    ========================================= */
-function crearTablaMatrizHTML(term, colClass = 'col-12 col-sm-6 col-md-3') {
+function crearTablaMatrizHTML(term, colClass = 'col-12 col-md-6', cardClass = '') {
     const col = document.createElement('div');
     col.className = colClass;
     col.innerHTML = `
-        <div class="card shadow-sm h-100">
+        <div class="card shadow-none border-0 h-100 ${cardClass}">
             <div class="card-header d-flex justify-content-between align-items-center bg-light">
                 <strong>${term.name}</strong>
                 <button class="btn btn-sm btn-link text-decoration-none" onclick="consultarCajaIndividual(${term.id})">
                     <i class="fa-solid fa-rotate-right"></i>
                 </button>
             </div>
-            <div class="card-body p-0">
-                <table class="table table-sm mb-0 mini-job-table">
+            <div class="card-body p-0 table-responsive">
+                <table class="table table-sm mb-0 mini-job-table table-bordered table-hover">
+                    <thead class="table-light small text-muted text-center">
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Estado</th>
+                            <th>Ejecución</th>
+                            <th>Última ejecución</th>
+                            <th>Duración</th>
+                            <th>Inicio</th>
+                        </tr>
+                    </thead>
                     <tbody id="matrix-tbody-${term.id}">
-                        <tr><td class="text-center py-3 text-muted">Cargando...</td></tr>
+                        <tr><td colspan="6" class="text-center py-3 text-muted">Cargando...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -301,26 +311,58 @@ function renderizarFilasMatriz(id, jobs, serverTime) {
     tbody.innerHTML = '';
 
     jobs.forEach(job => {
-        let color = 'text-secondary';
-        let icon = 'fa-circle';
+        // --- ESTADO (Outcome) ---
+        let outcomeBadge = 'bg-secondary';
+        if (job.LastOutcome === 'Exitoso') outcomeBadge = 'bg-success';
+        else if (job.LastOutcome === 'Fallido') outcomeBadge = 'bg-danger';
+        else if (job.LastOutcome === 'Cancelado') outcomeBadge = 'bg-warning text-dark';
         
-        if (job.LastStatus === 'Exitoso') { color = 'text-success'; icon = 'fa-check-circle'; }
-        if (job.LastStatus === 'Fallido') { color = 'text-danger'; icon = 'fa-times-circle'; }
-        if (job.LastStatus === 'En Ejecución') { color = 'text-warning'; icon = 'fa-cog fa-spin'; }
+        // --- EJECUCIÓN (Execution) ---
+        let execBadge = 'bg-secondary';
+        let execText = 'Stopped';
+        if (job.ExecutionStatus === 'Running') { execBadge = 'bg-warning text-dark'; execText = 'En ejecución'; }
+        else if (job.ExecutionStatus === 'Idle') { execBadge = 'bg-light text-dark border'; execText = 'Detenido'; }
 
-        // Cálculo de duración
-        const durationStr = calcularDuracion(job.LastRunDate, serverTime, job.LastStatus);
+        // --- FECHAS ---
+        let lastRunDateFmt = '||';
+        if (job.LastRunDate) {
+            const parts = window.dateFormatter(job.LastRunDate).split(',');
+            if (parts.length >= 2) {
+                lastRunDateFmt = `${parts[0].trim()} || ${parts[1].trim()}`;
+            } else {
+                lastRunDateFmt = window.dateFormatter(job.LastRunDate);
+            }
+        }
+        
+        // --- DURACIÓN ---
+        const duration = calcularDuracion(job.LastRunDate, serverTime, job.ExecutionStatus, job.LastDuration);
+
+        // --- INICIO (Si está corriendo) ---
+        let startTime = '-';
+        if (job.ExecutionStatus === 'Running' && job.LastRunDate) {
+             const parts = window.dateFormatter(job.LastRunDate).split(',');
+             if(parts.length >= 2) startTime = parts[1].trim();
+        }
 
         tbody.innerHTML += `
-            <tr class="mini-job-row">
-                <td class="text-center align-middle" style="width: 40px;">
-                    <i class="fa-solid ${icon} status-icon-lg ${color}"></i>
+            <tr class="mini-job-row small align-middle">
+                <td class="text-truncate" style="max-width: 200px;" title="${job.JobName}">
+                    ${job.JobName}
                 </td>
-                <td class="align-middle">
-                    <div class="fw-bold text-truncate" title="${job.JobName}" style="max-width: 150px;">${job.JobName}</div>
+                <td class="text-center">
+                    <span class="badge ${outcomeBadge} w-100">${job.LastOutcome || 'Desc.'}</span>
                 </td>
-                <td class="align-middle text-end pe-3 small text-muted">
-                    ${durationStr}
+                <td class="text-center">
+                    <span class="badge ${execBadge} w-100">${execText}</span>
+                </td>
+                <td class="text-center text-muted small">
+                    ${lastRunDateFmt}
+                </td>
+                <td class="text-center font-monospace small">
+                    ${duration}
+                </td>
+                <td class="text-center text-muted small">
+                    ${startTime}
                 </td>
             </tr>
         `;
@@ -350,7 +392,7 @@ function marcarCargaVisual(id) {
         // Reemplazamos las filas actuales por un mini spinner centrado
         tbody.innerHTML = `
             <tr>
-                <td colspan="3" class="text-center py-3 text-muted">
+                <td colspan="6" class="text-center py-3 text-muted">
                     <i class="fa-solid fa-circle-notch fa-spin"></i>
                 </td>
             </tr>
@@ -409,20 +451,23 @@ async function llenarModalConFetch(id) {
                 let badgeClass = 'bg-secondary';
                 let icon = '';
                 
-                if (job.LastStatus === 'Exitoso') { badgeClass = 'bg-success'; icon = '<i class="fa-solid fa-check"></i>'; }
-                if (job.LastStatus === 'Fallido') { badgeClass = 'bg-danger'; icon = '<i class="fa-solid fa-xmark"></i>'; }
-                if (job.LastStatus === 'En Ejecución') { badgeClass = 'bg-warning text-dark'; icon = '<i class="fa-solid fa-gear fa-spin"></i>'; }
+                // Updated to use LastOutcome instead of LastStatus
+                if (job.LastOutcome === 'Exitoso') { badgeClass = 'bg-success'; icon = '<i class="fa-solid fa-check"></i>'; }
+                if (job.LastOutcome === 'Fallido') { badgeClass = 'bg-danger'; icon = '<i class="fa-solid fa-xmark"></i>'; }
+                if (job.ExecutionStatus === 'Running') { badgeClass = 'bg-warning text-dark'; icon = '<i class="fa-solid fa-gear fa-spin"></i>'; }
 
-                const duration = calcularDuracion(job.LastRunDate, serverTime, job.LastStatus);
+                const duration = calcularDuracion(job.LastRunDate, serverTime, job.ExecutionStatus, job.LastDuration);
                 const fechaFmt = window.dateFormatter(job.LastRunDate); 
                 
                 // Limpieza del mensaje para que no rompa el atributo HTML title (escapar comillas)
                 const rawMsg = job.LastMessage || '';
                 const safeMsg = rawMsg.replace(/"/g, '&quot;'); 
 
+                const displayStatus = job.ExecutionStatus === 'Running' ? 'En Ejecución' : job.LastOutcome;
+
                 tbody.innerHTML += `
                     <tr>
-                        <td><span class="badge ${badgeClass}">${icon} ${job.LastStatus}</span></td>
+                        <td><span class="badge ${badgeClass}">${icon} ${displayStatus}</span></td>
                         <td class="fw-bold">${job.JobName}</td>
                         <td>
                             <div class="small fw-bold">${duration}</div>
@@ -451,41 +496,38 @@ async function llenarModalConFetch(id) {
    ========================================= */
 function calcularEstadoGlobal(jobs) {
     if(!jobs || jobs.length === 0) return 'warning';
-    if(jobs.some(j => j.LastStatus === 'Fallido')) return 'error';
-    if(jobs.some(j => j.LastStatus === 'En Ejecución')) return 'warning';
+    if(jobs.some(j => j.LastOutcome === 'Fallido')) return 'error';
+    if(jobs.some(j => j.ExecutionStatus === 'Running')) return 'warning';
     return 'success';
 }
 
 function marcarErrorVisual(id) {
     actualizarTarjetaVisual(id, 'error');
     const tbody = document.getElementById(`matrix-tbody-${id}`);
-    if(tbody) tbody.innerHTML = '<tr><td class="text-danger text-center"><small>Error de conexión</small></td></tr>';
+    if(tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-danger text-center"><small>Error de conexión</small></td></tr>';
 }
 
 // CÁLCULO DE DURACIÓN
-function calcularDuracion(startDateStr, serverDateStr, status) {
-    if (!startDateStr) return '-';
-    
-    // Si no está ejecutándose, mostramos la fecha de fin (o inicio si no hay fin) formateada
-    if (status !== 'En Ejecución') {
-        // Opcional: Podrías retornar window.dateFormatter(startDateStr) si prefieres
-        return 'Finalizado'; 
+function calcularDuracion(startDateStr, serverDateStr, executionStatus, lastDurationStr) {
+    // 1. Si NO está corriendo, devolvemos la duración estática que viene del backend
+    if (executionStatus !== 'Running') {
+        return lastDurationStr || '00:00:00';
     }
 
-    const start = new Date(startDateStr);
-    const nowServer = new Date(serverDateStr); 
+    // 2. Si ESTÁ corriendo, calculamos tiempo transcurrido (serverTime - lastRunDate)
+    if (!startDateStr || !serverDateStr) return 'Calculando...';
 
-    // CORRECCIÓN DE ZONA HORARIA:
-    // El servidor Node envía UTC (0). SQL Server envía Caracas (-4).
-    // La diferencia son 4 horas. Restamos 4 horas (en milisegundos) a la hora del servidor
-    // para igualarla a la hora local de la caja.
-    const offsetCaracas = 4 * 60 * 60 * 1000; // 4 horas * 60 min * 60 seg * 1000 ms
-    const nowLocal = new Date(nowServer.getTime() - offsetCaracas);
-    
+    const start = new Date(startDateStr);
+    const nowServerUTC = new Date(serverDateStr); 
+
+    // AJUSTE DE ZONA HORARIA: serverTime viene en UTC, ajustamos a Caracas (UTC-4)
+    // Restamos 4 horas (4 * 60 * 60 * 1000 milisegundos)
+    const offsetCaracas = 4 * 60 * 60 * 1000; // 4 horas en milisegundos
+    const nowServerCaracas = new Date(nowServerUTC.getTime() - offsetCaracas);
+
     // Diferencia en milisegundos
-    let diff = nowLocal - start;
+    let diff = nowServerCaracas - start;
     
-    // Si por alguna razón da negativo (relojes desincronizados), ponemos 0
     if (diff < 0) diff = 0; 
 
     const totalSeconds = Math.floor(diff / 1000);
@@ -493,24 +535,23 @@ function calcularDuracion(startDateStr, serverDateStr, status) {
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
 
-    let result = '';
-    // Solo mostramos horas si hay más de 0, para ahorrar espacio
-    if (hours > 0) result += `${hours}h `;
-    result += `${minutes}m ${seconds}s`;
+    const hStr = hours.toString().padStart(2, '0');
+    const mStr = minutes.toString().padStart(2, '0');
+    const sStr = seconds.toString().padStart(2, '0');
 
-    return `<span class="text-primary fw-bold"><i class="fa-solid fa-stopwatch me-1"></i> ${result}</span>`;
+    return `<span class="text-primary fw-bold"><i class="fa-solid fa-stopwatch me-1"></i> ${hStr}:${mStr}:${sStr}</span>`;
 }
 
-// Tu función anterior de formato de fecha
+// Función de formato de fecha
 window.dateFormatter = (value) => {
     if (!value) return '-';
     const date = new Date(value);
-    const day = date.getUTCDate().toString().padStart(2, '0');
-    const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
-    const year = date.getUTCFullYear();
-    const hours = date.getUTCHours().toString().padStart(2, '0');
-    const minutes = date.getUTCMinutes().toString().padStart(2, '0');
-    const seconds = date.getUTCSeconds().toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const seconds = date.getSeconds().toString().padStart(2, '0');
     return `${hours}:${minutes}:${seconds}, ${day}/${month}/${year}`;
 };
 
