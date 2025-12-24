@@ -1,0 +1,90 @@
+<%- include('../layout/header') %>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Gestión de Terminales POS</h2>
+        <button class="btn btn-primary" onclick="abrirModalCrear()">
+            <i class="bi bi-hdd-network"></i> Nueva Terminal
+        </button>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+
+            <table id="tablaTerminales" data-toggle="table" data-url="/terminals/data" data-search="true"
+                data-pagination="true" data-page-list="[5, 10, 25, 50]" data-show-refresh="true"
+                data-show-columns="true" data-show-toggle="true" data-icons-prefix="bi" data-icons="icons"
+                class="table table-hover table-bordered">
+
+                <thead class="table-light">
+                    <tr>
+
+                        <th data-field="name" data-sortable="true">Nombre</th>
+                        <th data-field="is_server" data-sortable="true" data-formatter="typeFormatter">Tipo</th>
+                        <th data-field="ip_address" data-sortable="true">Dirección IP</th>
+                        <th data-field="db_user" data-sortable="true">Usuario BD</th>
+                        <th data-field="is_active" data-sortable="true" data-formatter="statusFormatter">Estado</th>
+                        <th data-field="operate" data-formatter="actionFormatter" class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalTerminal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitulo">Terminal</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formTerminal">
+                        <input type="hidden" id="terminalId">
+                        <div class="mb-3">
+                            <label class="form-label">Nombre de la Terminal</label>
+                            <input type="text" class="form-control" id="name" required
+                                placeholder="Ej: Caja 01 - Tienda Centro">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Tipo de Terminal</label>
+                            <select class="form-select" id="type">
+                                <option value="0">Caja</option>
+                                <option value="1">Servidor</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Dirección IP</label>
+                            <input type="text" class="form-control" id="ip_address" required
+                                placeholder="Ej: 192.168.1.50">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Usuario de Base de Datos</label>
+                            <input type="text" class="form-control" id="db_user" required placeholder="Ej: sa">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Contraseña de Base de Datos</label>
+                            <input type="password" class="form-control" id="db_pass"
+                                placeholder="Dejar vacío para no cambiar">
+                            <div class="form-check mt-2" id="divForceBlank">
+                                <input class="form-check-input" type="checkbox" id="forceBlankPassword">
+                                <label class="form-check-label" for="forceBlankPassword">
+                                    Borrar contraseña (dejar vacía)
+                                </label>
+                            </div>
+                            <div class="form-text" id="passHelp">Opcional (puede dejarse vacío).</div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="guardarTerminal()">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <%- include('../layout/footer') %>

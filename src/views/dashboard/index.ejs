@@ -1,0 +1,334 @@
+<%- include('../layout/header') %>
+
+    <style>
+        /* --- TUS ESTILOS PERSONALIZADOS --- */
+        .dashboard-header {
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+            border-radius: 8px;
+        }
+
+        /* Tarjeta POS */
+        .pos-card {
+            height: 160px;
+            /* Un poco más alto para info */
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background-color: white;
+            /* Default bg */
+        }
+
+        .pos-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Estados */
+        .status-error {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            border: 1px solid #bd2130;
+        }
+
+        .status-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+            color: #212529;
+            border: 1px solid #d39e00;
+        }
+
+        .status-success {
+            background: linear-gradient(135deg, #198754 0%, #157347 100%);
+            color: white;
+            border: 1px solid #146c43;
+        }
+
+        .status-loading {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            color: #6c757d;
+            border: 1px solid #dee2e6;
+        }
+
+        .pos-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            opacity: 0.8;
+        }
+
+        /* Overlay Hover */
+        .hover-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 10;
+        }
+
+        .pos-card:hover .hover-overlay {
+            opacity: 1;
+        }
+
+        .view-details-btn {
+            background-color: white;
+            color: #333;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            transform: scale(0.9);
+            transition: transform 0.2s;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .view-details-btn:hover {
+            transform: scale(1.05);
+            background-color: #f8f9fa;
+        }
+
+        /* Modal Styles */
+        .modal-header.header-error {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .modal-header.header-warning {
+            background-color: #ffc107;
+            color: #212529;
+        }
+
+        .modal-header.header-success {
+            background-color: #198754;
+            color: white;
+        }
+
+        .modal-header.header-loading {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 15px;
+            font-size: 0.9rem;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        /* Estilos Nuevos */
+        .timer-badge {
+            font-size: 1.2rem;
+            font-family: monospace;
+            cursor: pointer;
+        }
+
+        /* Estilos para la Vista de Matriz (Tab 2) */
+        .mini-job-table {
+            font-size: 0.75rem;
+        }
+
+        /* Antes 0.85rem */
+        .mini-job-row td {
+            padding: 4px 6px;
+        }
+
+        /* Menos padding en celdas */
+
+        .mini-job-row {
+            transition: background 0.2s;
+        }
+
+        .mini-job-row:hover {
+            background-color: #f1f3f5;
+        }
+
+        .status-icon-lg {
+            font-size: 1.2rem;
+        }
+
+        /* Ajuste de Tabs */
+        .nav-tabs .nav-link {
+            color: #495057;
+            font-weight: 500;
+        }
+
+        .nav-tabs .nav-link.active {
+            color: #0d6efd;
+            border-bottom: 3px solid #0d6efd;
+        }
+
+        /* Estilos Específicos para la Tarjeta de Servidor */
+        .server-card {
+            border-left: 5px solid #0d6efd;
+            /* Borde azul grueso a la izquierda */
+            background: linear-gradient(to right, #ffffff, #f8f9fa);
+            height: 180px;
+            /* Más alta */
+        }
+
+        /* Icono del servidor más prominente */
+        .server-icon-large {
+            font-size: 4rem;
+            color: #0d6efd;
+            opacity: 0.2;
+            position: absolute;
+            right: 20px;
+            bottom: 10px;
+        }
+
+        /* Títulos de sección */
+        .ls-1 {
+            letter-spacing: 1px;
+        }
+    </style>
+
+
+
+    <div class="dashboard-header d-flex justify-content-between align-items-center sticky-top" style="z-index: 1000;">
+        <div>
+            <h3 class="m-0"><i class="fa-solid fa-server me-2"></i>Monitor POS</h3>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+            <div class="text-end">
+                <small class="text-muted d-block" style="font-size: 0.7rem;">AUTO-REFRESH</small>
+                <span class="badge bg-light text-dark border timer-badge" id="countdownTimer" onclick="toggleTimer()"
+                    title="Click para pausar/reanudar">
+                    05:00
+                </span>
+            </div>
+            <button class="btn btn-primary" id="btnGlobalRefresh" onclick="forzarRefrescoTotal()">
+                <i class="fa-solid fa-arrows-rotate me-1"></i> Refrescar
+            </button>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs mb-4" id="viewTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="grid-tab" data-bs-toggle="tab" data-bs-target="#grid-view" type="button"
+                role="tab">
+                <i class="fa-solid fa-border-all me-2"></i>Vista General (Cajas)
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="matrix-tab" data-bs-toggle="tab" data-bs-target="#matrix-view" type="button"
+                role="tab">
+                <i class="fa-solid fa-list-check me-2"></i>Vista Detallada (Todos los Jobs)
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="dashboardContent">
+
+        <div class="tab-pane fade show active" id="grid-view" role="tabpanel">
+
+            <div class="mb-4">
+                <h6 class="text-uppercase text-muted fw-bold small ls-1"><i
+                        class="fa-solid fa-server me-2"></i>Infraestructura Core</h6>
+                <div class="row g-4" id="server-grid">
+                </div>
+            </div>
+
+            <hr class="my-4 opacity-25">
+
+            <div>
+                <h6 class="text-uppercase text-muted fw-bold small ls-1"><i
+                        class="fa-solid fa-cash-register me-2"></i>Terminales POS</h6>
+                <div class="row g-4" id="pos-grid">
+                    <div class="col-12 text-center py-5">
+                        <div class="spinner-border text-primary"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="matrix-view" role="tabpanel">
+            <div class="row">
+                <div class="mb-4 col-4">
+                    <h6 class="text-uppercase text-muted fw-bold small ls-1">Servidor Principal</h6>
+                    <div class="row g-4" id="server-matrix"></div>
+                </div>
+
+                <hr class="my-4 opacity-25">
+
+                <div class="col-8">
+                    <h6 class="text-uppercase text-muted fw-bold small ls-1">Detalle POS</h6>
+                    <div class="row g-4" id="matrix-grid"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- <div class="container-fluid px-0">
+        <div class="row mb-3">
+            <div class="col-12 text-end">
+                <span class="text-muted me-2" id="last-updated">Actualizando...</span>
+                <button class="btn btn-sm btn-outline-primary" onclick="cargarGridTerminales()">
+                    <i class="fa-solid fa-arrows-rotate me-1"></i>Refrescar Todo
+                </button>
+            </div>
+        </div>
+
+        <div class="row g-4" id="pos-grid">
+            <div class="col-12 text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">Cargando terminales...</p>
+            </div>
+        </div>
+    </div> -->
+    <div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header header-loading" id="modalHeader">
+                    <h5 class="modal-title" id="modalTitle">Cargando...</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
+                        <span id="modalIp" class="text-muted"></span>
+                        <span id="modalId" class="fw-bold"></span>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Estado</th>
+                                    <th>Job</th>
+                                    <th>Duración / Inicio</th>
+                                    <th>Mensaje</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="jobsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <%- include('../layout/footer') %>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>SysAdmin Suite</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-table@1.22.1/dist/bootstrap-table.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/dashboard">SysAdmin Tool</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link <%= page === 'dashboard' ? 'active' : '' %>" href="/dashboard">Monitor
+                            Jobs</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <%= page === 'terminals' ? 'active' : '' %>" href="/terminals">Terminales</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <%= page === 'users' ? 'active' : '' %>" href="/users">Usuarios</a>
+                    </li>
+                </ul>
+                <span class="navbar-text text-white me-3">Hola, <%= user.username %></span>
+                <a href="/logout" class="btn btn-outline-light btn-sm">Salir</a>
+            </div>
+        </div>
+    </nav>
+    <div class="container">

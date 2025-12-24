@@ -1,0 +1,76 @@
+<%- include('../layout/header') %>
+
+    <script>
+        const currentUserId = Number('<%= user.id %>');
+    </script>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Gestión de Usuarios</h2>
+        <button class="btn btn-primary" onclick="abrirModalCrear()">
+            <i class="bi bi-person-plus"></i> Nuevo Usuario
+        </button>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+
+            <table id="tablaUsuarios" data-toggle="table" data-url="/users/data" data-search="true"
+                data-pagination="true" data-page-list="[5, 10, 25, 50]" data-show-refresh="true"
+                data-show-columns="true" data-show-toggle="true" data-icons-prefix="bi" data-icons="icons"
+                class="table table-hover table-bordered">
+
+                <thead class="table-light">
+                    <tr>
+                        <th data-field="id" data-sortable="true">ID</th>
+                        <th data-field="username" data-sortable="true">Usuario</th>
+                        <th data-field="role" data-sortable="true" data-formatter="roleFormatter">Rol</th>
+                        <th data-field="created_at" data-sortable="true" data-formatter="dateFormatter">Fecha Creación
+                        </th>
+                        <th data-field="operate" data-formatter="actionFormatter" class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalUsuario" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitulo">Usuario</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formUsuario">
+                        <input type="hidden" id="userId">
+                        <div class="mb-3">
+                            <label class="form-label">Nombre de Usuario</label>
+                            <input type="text" class="form-control" id="username" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Contraseña</label>
+                            <input type="password" class="form-control" id="password"
+                                placeholder="Dejar vacío para no cambiar">
+                            <div class="form-text" id="passHelp">Requerido para nuevos usuarios.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Rol</label>
+                            <select class="form-select" id="role">
+                                <option value="admin">Administrador</option>
+                                <option value="analista">Analista</option>
+                                <option value="viewer">Visualizador</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="guardarUsuario()">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <%- include('../layout/footer') %>

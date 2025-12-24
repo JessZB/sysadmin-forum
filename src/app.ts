@@ -1,27 +1,57 @@
-import express, { Application, Request, Response, NextFunction } from 'express';
-import cors from 'cors';
+import path from 'path';
+
+import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
-import posRoutes from './modules/pos-jobs/pos.routes';
+import express, { Application, Request, Response, NextFunction } from 'express';
+
+import * as authController from './modules/auth/auth.controller';
+import usersRoutes from './modules/users/users.routes';
+import terminalsRoutes from './modules/terminals/terminals.routes';
+import dashboardRoutes from './modules/dashboard/dashboard.routes';
+import { requireAuth } from './shared/middlewares/auth.middleware';
+import { notFoundHandler } from './shared/middlewares/not-found.middleware';
+
 
 
 dotenv.config();
 
 const app: Application = express();
 
+// Configuración de Motor de Vistas (EJS)
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
 // Middlewares
-app.use(cors());
+
+app.use(express.static(path.join(__dirname, '../public'))) // Servir CSS/JS estáticos
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser()); // Para leer cookie de la sesión
+
+app.use((req, res, next) => {
+    console.log(`📡 Petición recibida: ${req.method} ${req.url}`);
+    next();
+});
 
 // Ruta Base
 app.get('/', (req: Request, res: Response) => {
-    res.json({ 
-        system: 'SysAdmin Monitor', 
-        tech: 'Node.js + TypeScript + MySQL' 
-    });
+    res.redirect('/login');
 });
 
-// Rutas Modulares
-app.use('/api/pos-jobs', posRoutes);
+// 1. Rutas Públicas
+app.get('/login', authController.showLogin);
+app.post('/login', authController.login);
+app.get('/logout', authController.logout);
+
+// 2. Rutas Protegidas (VISTAS)
+app.use('/terminals', requireAuth, terminalsRoutes);
+app.use('/dashboard', requireAuth, dashboardRoutes);
+
+// 3. Rutas Protegidas (API)
+app.use('/users', requireAuth, usersRoutes);
+
+// Manejo de Rutas No Encontradas
+app.use(notFoundHandler);
 
 // Manejo de Errores Tipado
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
@@ -32,4 +62,5 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
     console.log(`🚀 Servidor TS corriendo en puerto ${PORT}`);
+    console.log(`🌐 URL del Servidor: http://localhost:${PORT}`);
 });
