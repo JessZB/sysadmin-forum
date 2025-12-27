@@ -130,10 +130,15 @@ async function cargarDatos() {
         // 1 es true en MySQL (TINYINT)
         const servers = globalTerminalsCache.filter(t => t.is_server === 1); 
         const terminals = globalTerminalsCache.filter(t => t.is_server === 0);
+        
+        // Ordenar terminales por nombre
+        terminals.sort((a, b) => a.name.localeCompare(b.name));
 
         // LIMPIEZA
         serverGrid.innerHTML = ''; posGrid.innerHTML = '';
-        serverMatrix.innerHTML = ''; posMatrix.innerHTML = '';
+        serverMatrix.innerHTML = ''; 
+        // posMatrix ahora es un tbody, lo limpiamos con un mensaje de carga
+        posMatrix.innerHTML = '<tr><td colspan="7" class="text-center py-3 text-muted">Cargando...</td></tr>';
 
         // 1. RENDERIZAR SERVIDORES (Diseño Especial)
         if (servers.length === 0) serverGrid.innerHTML = '<div class="col-12 text-muted small fst-italic">No hay servidores configurados.</div>';
@@ -150,7 +155,7 @@ async function cargarDatos() {
         
         terminals.forEach(term => {
             posGrid.appendChild(crearTarjetaHTML(term));
-            posMatrix.appendChild(crearTablaMatrizHTML(term, 'col-12 mt-0', 'd-flex flex-row'));
+            // No creamos tarjetas individuales para la matriz, usamos una sola tabla
         });
 
         // 3. CONSULTAR ESTADOS (Para todos)
@@ -306,11 +311,44 @@ function crearTablaMatrizHTML(term, colClass = 'col-12 col-md-6', cardClass = ''
 }
 
 function renderizarFilasMatriz(id, jobs, serverTime) {
-    const tbody = document.getElementById(`matrix-tbody-${id}`);
-    if(!tbody) return;
-    tbody.innerHTML = '';
+    // Buscar el terminal/servidor en el caché global
+    const terminal = globalTerminalsCache.find(t => t.id === id);
+    if (!terminal) return;
+    
+    const isServer = terminal.is_server === 1;
+    
+    // Si es servidor, usar su tbody individual
+    if (isServer) {
+        const tbody = document.getElementById(`matrix-tbody-${id}`);
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        
+        jobs.forEach(job => {
+            const row = crearFilaJob(job, serverTime, '', isServer ? 1 : 0);
+            tbody.appendChild(row);
+        });
+        return;
+    }
+    
+    // Si es terminal, usar el tbody compartido
+    const matrixGrid = document.getElementById('matrix-grid');
+    if(!matrixGrid) return;
+    
+    const terminalName = terminal.name;
+    
+    // Eliminar mensaje de cargando si existe
+    const loadingRow = matrixGrid.querySelector('td[colspan="7"]');
+    if (loadingRow) {
+        loadingRow.parentElement.remove();
+    }
+    
+    // Eliminar filas anteriores de esta terminal si existen
+    const existingRows = matrixGrid.querySelectorAll(`tr[data-terminal-id="${id}"]`);
+    existingRows.forEach(row => row.remove());
 
-    jobs.forEach(job => {
+    // Crear todas las filas de esta terminal
+    const newRows = [];
+    jobs.forEach((job, index) => {
         // --- ESTADO (Outcome) ---
         let outcomeBadge = 'bg-secondary';
         if (job.LastOutcome === 'Exitoso') outcomeBadge = 'bg-success';
@@ -326,48 +364,124 @@ function renderizarFilasMatriz(id, jobs, serverTime) {
         // --- FECHAS ---
         let lastRunDateFmt = '||';
         if (job.LastRunDate) {
-            const parts = window.dateFormatter(job.LastRunDate).split(',');
+            const parts = window.dateFormatter(job.LastRunDate, isServer ? 1 : 0).split(',');
             if (parts.length >= 2) {
                 lastRunDateFmt = `${parts[0].trim()} || ${parts[1].trim()}`;
             } else {
-                lastRunDateFmt = window.dateFormatter(job.LastRunDate);
+                lastRunDateFmt = window.dateFormatter(job.LastRunDate, isServer ? 1 : 0);
             }
         }
         
         // --- DURACIÓN ---
-        const duration = calcularDuracion(job.LastRunDate, serverTime, job.ExecutionStatus, job.LastDuration);
+        const duration = calcularDuracion(job.LastRunDate, serverTime, job.ExecutionStatus, job.LastDuration, isServer ? 1 : 0);
 
         // --- INICIO (Si está corriendo) ---
         let startTime = '-';
         if (job.ExecutionStatus === 'Running' && job.LastRunDate) {
-             const parts = window.dateFormatter(job.LastRunDate).split(',');
+             const parts = window.dateFormatter(job.LastRunDate, isServer ? 1 : 0).split(',');
              if(parts.length >= 2) startTime = parts[1].trim();
         }
+        
+        // Solo mostrar el nombre de la terminal en la primera fila (con rowspan)
+        const terminalCell = index === 0 
+            ? `<td rowspan="${jobs.length}" class="align-middle fw-bold text-center bg-light">${terminalName}</td>`
+            : '';
 
-        tbody.innerHTML += `
-            <tr class="mini-job-row small align-middle">
-                <td class="text-truncate" style="max-width: 200px;" title="${job.JobName}">
-                    ${job.JobName}
-                </td>
-                <td class="text-center">
-                    <span class="badge ${outcomeBadge} w-100">${job.LastOutcome || 'Desc.'}</span>
-                </td>
-                <td class="text-center">
-                    <span class="badge ${execBadge} w-100">${execText}</span>
-                </td>
-                <td class="text-center text-muted small">
-                    ${lastRunDateFmt}
-                </td>
-                <td class="text-center font-monospace small">
-                    ${duration}
-                </td>
-                <td class="text-center text-muted small">
-                    ${startTime}
-                </td>
-            </tr>
-        `;
+        const row = crearFilaJob(job, serverTime, terminalCell, isServer ? 1 : 0);
+        row.setAttribute('data-terminal-id', id);
+        row.setAttribute('data-terminal-name', terminalName);
+        newRows.push(row);
     });
+    
+    // Encontrar la posición correcta para insertar (orden alfabético)
+    const allTerminalRows = Array.from(matrixGrid.querySelectorAll('tr[data-terminal-name]'));
+    
+    if (allTerminalRows.length === 0) {
+        // Si no hay filas, agregar al final
+        newRows.forEach(row => matrixGrid.appendChild(row));
+    } else {
+        // Buscar dónde insertar
+        let insertBeforeRow = null;
+        
+        for (const existingRow of allTerminalRows) {
+            const existingName = existingRow.getAttribute('data-terminal-name');
+            if (terminalName.localeCompare(existingName) < 0) {
+                insertBeforeRow = existingRow;
+                break;
+            }
+        }
+        
+        if (insertBeforeRow) {
+            // Insertar antes de la fila encontrada
+            newRows.forEach(row => matrixGrid.insertBefore(row, insertBeforeRow));
+        } else {
+            // Insertar al final
+            newRows.forEach(row => matrixGrid.appendChild(row));
+        }
+    }
 }
+
+// Función auxiliar para crear una fila de job
+function crearFilaJob(job, serverTime, terminalCellHTML = '', isServer = 0) {
+    // --- ESTADO (Outcome) ---
+    let outcomeBadge = 'bg-secondary';
+    if (job.LastOutcome === 'Exitoso') outcomeBadge = 'bg-success';
+    else if (job.LastOutcome === 'Fallido') outcomeBadge = 'bg-danger';
+    else if (job.LastOutcome === 'Cancelado') outcomeBadge = 'bg-warning text-dark';
+    
+    // --- EJECUCIÓN (Execution) ---
+    let execBadge = 'bg-secondary';
+    let execText = 'Stopped';
+    if (job.ExecutionStatus === 'Running') { execBadge = 'bg-warning text-dark'; execText = 'En ejecución'; }
+    else if (job.ExecutionStatus === 'Idle') { execBadge = 'bg-light text-dark border'; execText = 'Detenido'; }
+
+    // --- FECHAS ---
+    let lastRunDateFmt = '||';
+    if (job.LastRunDate) {
+        const parts = window.dateFormatter(job.LastRunDate, isServer).split(',');
+        if (parts.length >= 2) {
+            lastRunDateFmt = `${parts[0].trim()} || ${parts[1].trim()}`;
+        } else {
+            lastRunDateFmt = window.dateFormatter(job.LastRunDate, isServer);
+        }
+    }
+    
+    // --- DURACIÓN ---
+    const duration = calcularDuracion(job.LastRunDate, serverTime, job.ExecutionStatus, job.LastDuration, isServer);
+
+    // --- INICIO (Si está corriendo) ---
+    let startTime = '-';
+    if (job.ExecutionStatus === 'Running' && job.LastRunDate) {
+         const parts = window.dateFormatter(job.LastRunDate, isServer).split(',');
+         if(parts.length >= 2) startTime = parts[1].trim();
+    }
+
+    const row = document.createElement('tr');
+    row.className = 'mini-job-row small align-middle';
+    row.innerHTML = `
+        ${terminalCellHTML}
+        <td class="text-truncate" style="max-width: 200px;" title="${job.JobName}">
+            ${job.JobName}
+        </td>
+        <td class="text-center">
+            <span class="badge ${outcomeBadge} w-100">${job.LastOutcome || 'Desc.'}</span>
+        </td>
+        <td class="text-center">
+            <span class="badge ${execBadge} w-100">${execText}</span>
+        </td>
+        <td class="text-center text-muted small">
+            ${lastRunDateFmt}
+        </td>
+        <td class="text-center font-monospace small">
+            ${duration}
+        </td>
+        <td class="text-center text-muted small">
+            ${startTime}
+        </td>
+    `;
+    return row;
+}
+
 
 /* =========================================
    HELPER: INDICADOR VISUAL DE CARGA
@@ -439,6 +553,10 @@ async function llenarModalConFetch(id) {
             const serverTime = result.serverTime;
             const status = calcularEstadoGlobal(jobs);
             
+            // Obtener información del terminal para saber si es servidor
+            const terminal = globalTerminalsCache.find(t => t.id === id);
+            const isServer = terminal ? (terminal.is_server === 1 ? 1 : 0) : 0;
+            
             // Actualizar header
             const header = document.getElementById('modalHeader');
             header.className = `modal-header header-${status}`;
@@ -456,8 +574,8 @@ async function llenarModalConFetch(id) {
                 if (job.LastOutcome === 'Fallido') { badgeClass = 'bg-danger'; icon = '<i class="fa-solid fa-xmark"></i>'; }
                 if (job.ExecutionStatus === 'Running') { badgeClass = 'bg-warning text-dark'; icon = '<i class="fa-solid fa-gear fa-spin"></i>'; }
 
-                const duration = calcularDuracion(job.LastRunDate, serverTime, job.ExecutionStatus, job.LastDuration);
-                const fechaFmt = window.dateFormatter(job.LastRunDate); 
+                const duration = calcularDuracion(job.LastRunDate, serverTime, job.ExecutionStatus, job.LastDuration, isServer);
+                const fechaFmt = window.dateFormatter(job.LastRunDate, isServer); 
                 
                 // Limpieza del mensaje para que no rompa el atributo HTML title (escapar comillas)
                 const rawMsg = job.LastMessage || '';
@@ -508,7 +626,7 @@ function marcarErrorVisual(id) {
 }
 
 // CÁLCULO DE DURACIÓN
-function calcularDuracion(startDateStr, serverDateStr, executionStatus, lastDurationStr) {
+function calcularDuracion(startDateStr, serverDateStr, executionStatus, lastDurationStr, isServer = 0) {
     // 1. Si NO está corriendo, devolvemos la duración estática que viene del backend
     if (executionStatus !== 'Running') {
         return lastDurationStr || '00:00:00';
@@ -517,16 +635,37 @@ function calcularDuracion(startDateStr, serverDateStr, executionStatus, lastDura
     // 2. Si ESTÁ corriendo, calculamos tiempo transcurrido (serverTime - lastRunDate)
     if (!startDateStr || !serverDateStr) return 'Calculando...';
 
-    const start = new Date(startDateStr);
-    const nowServerUTC = new Date(serverDateStr); 
+    // Ahora serverDateStr viene DIRECTAMENTE del SQL Server de la terminal (gracias al cambio en el backend)
+    // Y startDateStr (LastRunDate) también viene del mismo SQL Server.
+    // Por lo tanto, ambos están sincronizados y en la misma zona horaria.
+    // Solo necesitamos asegurarnos de parsearlos correctamente.
 
-    // AJUSTE DE ZONA HORARIA: serverTime viene en UTC, ajustamos a Caracas (UTC-4)
-    // Restamos 4 horas (4 * 60 * 60 * 1000 milisegundos)
-    const offsetCaracas = 4 * 60 * 60 * 1000; // 4 horas en milisegundos
-    const nowServerCaracas = new Date(nowServerUTC.getTime() - offsetCaracas);
+    let start, nowServer;
+    
+    // Parseamos ambas fechas. 
+    // Nota: Aunque LastRunDate venga sin Z (en cajas) y serverDateStr venga con Z (o viceversa),
+    // al venir del mismo servidor, la diferencia relativa es la correcta.
+    // Sin embargo, para evitar problemas de interpretación del navegador, normalizamos:
+    
+    if (isServer === 0) {
+        // Cajas: LastRunDate suele venir sin Z (YYYY-MM-DDTHH:mm:ss.sss)
+        // serverDateStr ahora viene de GETDATE() en SQL Server, que devuelve YYYY-MM-DDTHH:mm:ss.sssZ (driver suele añadir Z)
+        
+        // Estrategia: Tratar ambas como fechas UTC para obtener la diferencia absoluta
+        // Eliminar Z de ambas para que el navegador las interprete igual (como local o como sea, pero IGUAL)
+        const s1 = startDateStr.replace(/Z$/, '');
+        const s2 = serverDateStr.replace(/Z$/, '');
+        
+        start = new Date(s1);
+        nowServer = new Date(s2);
+    } else {
+        // Servidores: Ambas suelen venir con Z
+        start = new Date(startDateStr);
+        nowServer = new Date(serverDateStr);
+    }
 
     // Diferencia en milisegundos
-    let diff = nowServerCaracas - start;
+    let diff = nowServer - start;
     
     if (diff < 0) diff = 0; 
 
@@ -543,16 +682,17 @@ function calcularDuracion(startDateStr, serverDateStr, executionStatus, lastDura
 }
 
 // Función de formato de fecha
-window.dateFormatter = (value) => {
+window.dateFormatter = (value, is_server = 0) => {
     if (!value) return '-';
-    const date = new Date(value);
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const year = date.getFullYear();
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    const seconds = date.getSeconds().toString().padStart(2, '0');
-    return `${hours}:${minutes}:${seconds}, ${day}/${month}/${year}`;
+
+    // Si es servidor (is_server === 1), eliminar la "Z" del string si existe
+    let dateString = value;
+    if (is_server === 0) {
+        dateString = value.replace(/Z$/, '');
+    }
+    
+    const date = new Date(dateString);
+    return date.toLocaleString();
 };
 
 /* =========================================

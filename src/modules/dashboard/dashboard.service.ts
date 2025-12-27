@@ -23,6 +23,11 @@ export const getTerminalJobs = async (terminalId: number) => {
     try {
         pool = await getSqlServerConnection(terminal);
 
+        // 0. Obtener Hora del Servidor SQL (Fuente de Verdad)
+        const timeResult = await pool.request().query('SELECT GETDATE() as CurrentTime');
+        const terminalTime = timeResult.recordset[0].CurrentTime;
+
+
         // C. Lógica Diferenciada
         if (terminal.is_server) {
             // --- LÓGICA PARA SERVIDORES (SP_HELP_JOB) ---
@@ -104,7 +109,7 @@ export const getTerminalJobs = async (terminalId: number) => {
                 });
             }
 
-            return mappedJobs;
+            return { jobs: mappedJobs, terminalTime };
 
         } else {
             // --- LÓGICA PARA CAJAS (QUERY DIRECTA) ---
@@ -143,7 +148,7 @@ export const getTerminalJobs = async (terminalId: number) => {
             `;
 
             const result = await pool.request().query(query);
-            return result.recordset;
+            return { jobs: result.recordset, terminalTime };
         }
 
     } finally {

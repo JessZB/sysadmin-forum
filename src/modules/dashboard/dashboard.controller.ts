@@ -23,14 +23,14 @@ export const getTerminalsList = async (req: Request, res: Response) => {
 export const getJobs = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const jobs = await dashService.getTerminalJobs(Number(id));
+        const { jobs, terminalTime } = await dashService.getTerminalJobs(Number(id));
 
         // --- CAMBIO AQUÍ ---
         // Enviamos también la hora actual del servidor para cálculos de duración precisos
         res.json({
             success: true,
             data: jobs,
-            serverTime: new Date() // Hora actual del servidor Backend
+            serverTime: terminalTime // Hora actual del servidor SQL Server (Fuente de Verdad)
         });
 
     } catch (e: any) { res.status(500).json({ error: e.message }); }

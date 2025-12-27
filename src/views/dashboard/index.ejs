@@ -146,12 +146,12 @@
 
         /* Estilos para la Vista de Matriz (Tab 2) */
         .mini-job-table {
-            font-size: 0.75rem;
+            font-size: 0.85rem;
         }
 
         /* Antes 0.85rem */
         .mini-job-row td {
-            padding: 4px 6px;
+            padding: 0px 6px;
         }
 
         /* Menos padding en celdas */
@@ -201,6 +201,14 @@
         /* Títulos de sección */
         .ls-1 {
             letter-spacing: 1px;
+        }
+
+        /* Sticky header para la tabla de matriz */
+        .mini-job-table thead.sticky-top {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: #f8f9fa;
         }
     </style>
 
@@ -266,14 +274,37 @@
 
         <div class="tab-pane fade" id="matrix-view" role="tabpanel">
             <div class="row">
-                <div class="mb-4 col-12 col-xl-6" style="max-width: 460px;">
+                <div class="mb-4 col-xl-6">
                     <h6 class="text-uppercase text-muted fw-bold small ls-1">Servidor Principal</h6>
                     <div class="row g-4" id="server-matrix"></div>
                 </div>
 
-                <div class="col-12 col-xl-6" style="max-width: 600px;">
+                <div class="col-xl-6">
                     <h6 class="text-uppercase text-muted fw-bold small ls-1">Detalle POS</h6>
-                    <div class="row g-4 border border-1" id="matrix-grid"></div>
+                    <div class="card shadow-sm">
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-sm mb-0 mini-job-table table-bordered table-hover">
+                                    <thead class="table-light small text-muted text-center sticky-top">
+                                        <tr>
+                                            <th>Terminal</th>
+                                            <th>Nombre</th>
+                                            <th>Estado</th>
+                                            <th>Ejecución</th>
+                                            <th>Última ejecución</th>
+                                            <th>Duración</th>
+                                            <th>Inicio</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="matrix-grid">
+                                        <tr>
+                                            <td colspan="7" class="text-center py-3 text-muted">Cargando...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
