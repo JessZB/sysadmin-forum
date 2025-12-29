@@ -3,10 +3,20 @@ import { getSqlServerConnection } from '../../shared/db/mssql.factory';
 import { Terminal } from '../../shared/interfaces/terminal.interface';
 import { RowDataPacket } from 'mysql2';
 import sql from 'mssql';
+import { getBranches } from '../branches/branches.service';
 
 // 1. Obtener lista simple de cajas para el sidebar
-export const getActiveTerminals = async () => {
-    const [rows] = await mainDbPool.query<RowDataPacket[]>('SELECT id, name, ip_address, is_server FROM pos_terminals WHERE is_active = 1');
+export const getActiveTerminals = async (branchId?: number) => {
+    let query = 'SELECT id, name, ip_address, is_server, branch_id FROM pos_terminals WHERE is_active = 1';
+    const params: any[] = [];
+
+    // Si se pasa un ID, filtramos. Si es NULL (caso admin viendo todo), no filtramos.
+    if (branchId) {
+        query += ' AND branch_id = ?';
+        params.push(branchId);
+    }
+
+    const [rows] = await mainDbPool.query<RowDataPacket[]>(query, params);
     return rows;
 };
 
@@ -266,3 +276,4 @@ export const getJobHistory = async (terminalId: number, jobName: string) => {
         if (pool) await pool.close();
     }
 };
+

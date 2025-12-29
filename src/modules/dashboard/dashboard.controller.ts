@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import * as dashService from './dashboard.service';
+import { mainDbPool } from '../../shared/db/main.db';
 
 // Renderizar Vista Principal
 export const renderDashboard = (req: Request, res: Response) => {
@@ -10,14 +11,41 @@ export const renderDashboard = (req: Request, res: Response) => {
     });
 };
 
-// API: Obtener lista de cajas (para el sidebar JS)
 export const getTerminalsList = async (req: Request, res: Response) => {
     try {
-        const terminals = await dashService.getActiveTerminals();
+        const currentUser = res.locals.user;
+        const requestedBranch = req.query.branchId ? Number(req.query.branchId) : null;
+
+        let targetBranchId: number | undefined;
+
+        // LÓGICA DE PERMISOS
+        if (currentUser.role === 'admin') {
+            // El admin puede ver todo (undefined) O filtrar si seleccionó una sucursal en el frontend
+            targetBranchId = requestedBranch || undefined;
+        } else {
+            // El analista ESTÁ FORZADO a ver solo su sucursal
+            targetBranchId = currentUser.branch_id;
+        }
+
+        const terminals = await dashService.getActiveTerminals(targetBranchId);
         res.json({ success: true, data: terminals });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
 };
 
+// API: Obtener lista de Sucursales (Solo para llenar el Select del Admin)
+export const getBranchesList = async (req: Request, res: Response) => {
+    try {
+        // Solo admin puede pedir la lista de sucursales para cambiar vista
+        if (res.locals.user.role !== 'admin') {
+            return res.json({ success: true, data: [] });
+        }
+
+        // Función simple que hace "SELECT id, name FROM sys_branches"
+        // Tendrás que crearla en un servicio aparte o importarla
+        const [rows] = await mainDbPool.query('SELECT id, name FROM sys_branches WHERE is_active = 1');
+        res.json({ success: true, data: rows });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+}
 // API: Obtener Jobs
 export const getJobs = async (req: Request, res: Response) => {
     try {

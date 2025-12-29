@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 
 // Obtener todos (sin devolver el password hash por seguridad)
 export const getAllUsers = async (): Promise<User[]> => {
-    const [rows] = await mainDbPool.query<RowDataPacket[]>('SELECT id, username, role, created_at FROM sys_users');
+    const [rows] = await mainDbPool.query<RowDataPacket[]>('SELECT id, branch_id, username, role, created_at FROM sys_users');
     return rows as User[];
 };
 
@@ -20,22 +20,22 @@ export const createUser = async (userData: User, rawPassword: string) => {
 
     // 3. Insertar
     const [result] = await mainDbPool.query<ResultSetHeader>(
-        'INSERT INTO sys_users (username, password_hash, role) VALUES (?, ?, ?)',
-        [userData.username, hash, userData.role]
+        'INSERT INTO sys_users (branch_id, username, password_hash, role) VALUES (?, ?, ?, ?)',
+        [userData.branch_id, userData.username, hash, userData.role]
     );
     return result.insertId;
 };
 
 // Actualizar Usuario
 export const updateUser = async (id: number, userData: User, newPassword?: string) => {
-    // Si envían password nuevo, lo hasheamos. Si no, solo actualizamos rol/nombre.
-    let query = 'UPDATE sys_users SET username = ?, role = ? WHERE id = ?';
-    let params: any[] = [userData.username, userData.role, id];
+    // Si envían password nuevo, lo hasheamos. Si no, solo actualizamos rol/nombre/branch.
+    let query = 'UPDATE sys_users SET branch_id = ?, username = ?, role = ? WHERE id = ?';
+    let params: any[] = [userData.branch_id, userData.username, userData.role, id];
 
     if (newPassword && newPassword.trim() !== '') {
         const hash = await bcrypt.hash(newPassword, 10);
-        query = 'UPDATE sys_users SET username = ?, role = ?, password_hash = ? WHERE id = ?';
-        params = [userData.username, userData.role, hash, id];
+        query = 'UPDATE sys_users SET branch_id = ?, username = ?, role = ?, password_hash = ? WHERE id = ?';
+        params = [userData.branch_id, userData.username, userData.role, hash, id];
     }
 
     await mainDbPool.query(query, params);

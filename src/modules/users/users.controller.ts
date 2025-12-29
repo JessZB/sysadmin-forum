@@ -43,8 +43,8 @@ export const create = async (req: Request, res: Response) => {
             return res.status(403).json({ success: false, error: 'No tienes permisos para crear usuarios.' });
         }
 
-        const { username, password, role } = req.body;
-        await userService.createUser({ username, role }, password);
+        const { username, password, role, branch_id } = req.body;
+        await userService.createUser({ username, role, branch_id }, password);
         res.json({ success: true });
     } catch (error: any) {
         res.status(400).json({ success: false, error: error.message });
@@ -60,8 +60,8 @@ export const update = async (req: Request, res: Response) => {
         }
 
         const { id } = req.params;
-        const { username, password, role } = req.body;
-        await userService.updateUser(Number(id), { username, role }, password);
+        const { username, password, role, branch_id } = req.body;
+        await userService.updateUser(Number(id), { username, role, branch_id }, password);
         res.json({ success: true });
     } catch (error: any) {
         res.status(400).json({ success: false, error: error.message });

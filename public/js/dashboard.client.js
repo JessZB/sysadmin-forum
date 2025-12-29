@@ -2,6 +2,7 @@ let refreshInterval;
 let timeLeft = 300; // 5 minutos en segundos
 let isPaused = false;
 let isCoolingDown = false;
+let currentBranchFilter = ''; // Variable global para el filtro
 let currentTerminalIdForModal = null;
 const detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
 
@@ -9,6 +10,11 @@ const detailsModal = new bootstrap.Modal(document.getElementById('detailsModal')
 let globalTerminalsCache = []; 
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. Intentar cargar lista de sucursales (Si el elemento existe, es porque soy admin)
+    const selector = document.getElementById('branchSelector');
+    if (selector) {
+        cargarSelectorSucursales();
+    }
     iniciarTemporizador();
     cargarDatos(); 
 
@@ -86,6 +92,32 @@ function toggleTimer() {
     badge.title = isPaused ? "PAUSADO" : "Click para pausar";
 }
 
+// Función para llenar el Select
+async function cargarSelectorSucursales() {
+    try {
+        const res = await fetch('/dashboard/api/branches'); // Nueva ruta creada en paso 4
+        const result = await res.json();
+        if (result.success) {
+            const selector = document.getElementById('branchSelector');
+            result.data.forEach(b => {
+                const opt = document.createElement('option');
+                opt.value = b.id;
+                opt.textContent = b.name;
+                selector.appendChild(opt);
+            });
+        }
+    } catch (e) { console.error("Error cargando sucursales"); }
+}
+
+// Evento onchange del Select
+function cambiarSucursal() {
+    const selector = document.getElementById('branchSelector');
+    currentBranchFilter = selector.value; // Guardamos el ID (o vacío para todas)
+    
+    // Forzamos recarga inmediata
+    forzarRefrescoTotal(); 
+}
+
 
 /* =========================================
    CARGA DE DATOS (Centralizada)
@@ -101,7 +133,11 @@ async function cargarDatos() {
     }
 
     try {
-        const res = await fetch('/dashboard/api/terminals');
+       let url = '/dashboard/api/terminals';
+        if (currentBranchFilter) {
+            url += `?branchId=${currentBranchFilter}`;
+        }
+        const res = await fetch(url);
         const result = await res.json();
         
         globalTerminalsCache = result.data;
@@ -702,7 +738,6 @@ window.verHistorialJob = async (jobName) => {
                 else if(h.StatusText === 'Fallido') badge = 'bg-danger';
                 
                 // Formatear fecha
-                // Nota: Asumimos que la API ya devuelve fecha legible gracias a agent_datetime
                 const dateFmt = formatDateRaw(h.RunDate);
 
                 tbody.innerHTML += `
