@@ -19,7 +19,6 @@ export const getTerminalsList = async (req: Request, res: Response) => {
 };
 
 // API: Obtener Jobs
-// API: Obtener Jobs
 export const getJobs = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
@@ -43,5 +42,28 @@ export const runJob = async (req: Request, res: Response) => {
         const { jobName } = req.body;
         await dashService.executeJob(Number(id), jobName);
         res.json({ success: true });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+};
+
+// API: Detener Job
+export const stopJob = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { jobName } = req.body;
+        await dashService.stopJob(Number(id), jobName);
+        res.json({ success: true });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+};
+
+// API: Historial Job
+export const getHistory = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params; // ID Terminal
+        // El nombre del job puede tener espacios, mejor pasarlo por query param o body. 
+        // Aquí usaremos query param: ?name=Job Name
+        const jobName = req.query.name as string;
+
+        const history = await dashService.getJobHistory(Number(id), jobName);
+        res.json({ success: true, data: history });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
 };

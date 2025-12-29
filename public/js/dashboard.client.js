@@ -5,14 +5,13 @@ let isCoolingDown = false;
 let currentTerminalIdForModal = null;
 const detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
 
-// Almacén temporal de datos para no tener que hacer fetch dos veces al cambiar de tab
+// Almacén temporal de datos
 let globalTerminalsCache = []; 
 
 document.addEventListener('DOMContentLoaded', () => {
     iniciarTemporizador();
-    cargarDatos(); // Carga inicial
+    cargarDatos(); 
 
-    // Pausar timer si el modal está abierto para no interrumpir al usuario
     const modalEl = document.getElementById('detailsModal');
     modalEl.addEventListener('show.bs.modal', () => { isPaused = true; });
     modalEl.addEventListener('hidden.bs.modal', () => { isPaused = false; });
@@ -28,13 +27,10 @@ function iniciarTemporizador() {
     refreshInterval = setInterval(() => {
         if (!isPaused) {
             timeLeft--;
-            
-            // Formatear MM:SS
             const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
             const s = (timeLeft % 60).toString().padStart(2, '0');
             timerBadge.innerText = `${m}:${s}`;
             
-            // Cambiar color si queda poco tiempo
             if (timeLeft < 60) timerBadge.className = 'badge bg-warning text-dark border timer-badge';
             else timerBadge.className = 'badge bg-light text-dark border timer-badge';
 
@@ -46,14 +42,9 @@ function iniciarTemporizador() {
 }
 
 function forzarRefrescoTotal() {
-    // 1. Si ya está en enfriamiento, no hacemos nada
     if (isCoolingDown) return;
-
-    // 2. Ejecutar la carga de datos inmediatamente
-    timeLeft = 300; // Reiniciar el temporizador automático (5 min)
+    timeLeft = 300;
     cargarDatos();
-
-    // 3. Iniciar el bloqueo visual (Cooldown)
     iniciarCooldownBoton();
 }
 
@@ -62,34 +53,24 @@ function iniciarCooldownBoton() {
     if (!btn) return;
 
     isCoolingDown = true;
-    btn.disabled = true; // Deshabilitar interacción
-    
-    // Guardamos el contenido original (Icono + Texto)
+    btn.disabled = true;
     const originalContent = '<i class="fa-solid fa-arrows-rotate me-1"></i> Refrescar';
-    
     let secondsLeft = 10;
 
-    // Función interna para actualizar el texto
     const updateText = () => {
         btn.innerHTML = `<i class="fa-solid fa-hourglass-half me-1"></i> Espere ${secondsLeft}s`;
-        // Opcional: Cambiar clase para que se vea gris/diferente
         btn.classList.remove('btn-primary');
         btn.classList.add('btn-secondary');
     };
 
-    updateText(); // Primera actualización inmediata
-
+    updateText();
     const interval = setInterval(() => {
         secondsLeft--;
-
         if (secondsLeft <= 0) {
-            // FIN DEL COOLDOWN
             clearInterval(interval);
             isCoolingDown = false;
             btn.disabled = false;
-            btn.innerHTML = originalContent; // Restaurar texto original
-            
-            // Restaurar estilo
+            btn.innerHTML = originalContent;
             btn.classList.remove('btn-secondary');
             btn.classList.add('btn-primary');
         } else {
@@ -115,7 +96,6 @@ async function cargarDatos() {
     const serverMatrix = document.getElementById('server-matrix');
     const posMatrix = document.getElementById('matrix-grid');
     
-    // Resetear contenidos
     if(globalTerminalsCache.length === 0) {
         posGrid.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary"></div></div>';
     }
@@ -125,40 +105,28 @@ async function cargarDatos() {
         const result = await res.json();
         
         globalTerminalsCache = result.data;
-        
-        // --- SEPARACIÓN DE ROLES ---
-        // 1 es true en MySQL (TINYINT)
         const servers = globalTerminalsCache.filter(t => t.is_server === 1); 
         const terminals = globalTerminalsCache.filter(t => t.is_server === 0);
         
-        // Ordenar terminales por nombre
         terminals.sort((a, b) => a.name.localeCompare(b.name));
 
-        // LIMPIEZA
         serverGrid.innerHTML = ''; posGrid.innerHTML = '';
         serverMatrix.innerHTML = ''; 
-        // posMatrix ahora es un tbody, lo limpiamos con un mensaje de carga
         posMatrix.innerHTML = '<tr><td colspan="7" class="text-center py-3 text-muted">Cargando...</td></tr>';
 
-        // 1. RENDERIZAR SERVIDORES (Diseño Especial)
         if (servers.length === 0) serverGrid.innerHTML = '<div class="col-12 text-muted small fst-italic">No hay servidores configurados.</div>';
         
         servers.forEach(srv => {
-            // Grid Tab
             serverGrid.appendChild(crearTarjetaServidorHTML(srv));
-            // Matrix Tab (Usamos col-12 para que sea más ancha)
             serverMatrix.appendChild(crearTablaMatrizHTML(srv, 'col-12'));
         });
 
-        // 2. RENDERIZAR CAJAS (Diseño Estándar)
         if (terminals.length === 0) posGrid.innerHTML = '<div class="col-12 text-muted small fst-italic">No hay cajas registradas.</div>';
         
         terminals.forEach(term => {
             posGrid.appendChild(crearTarjetaHTML(term));
-            // No creamos tarjetas individuales para la matriz, usamos una sola tabla
         });
 
-        // 3. CONSULTAR ESTADOS (Para todos)
         globalTerminalsCache.forEach(term => {
             consultarCajaIndividual(term.id);
         });
@@ -171,17 +139,13 @@ async function cargarDatos() {
 
 function crearTarjetaServidorHTML(term) {
     const col = document.createElement('div');
-    // El servidor ocupa más espacio visual (col-md-6)
     col.className = 'col-12 col-md-6 col-lg-4'; 
-    
     col.innerHTML = `
         <div class="pos-card status-loading server-card" id="card-${term.id}">
             <div class="d-flex w-100 h-100 align-items-center px-4 position-relative">
-                
                 <div class="me-4" id="icon-${term.id}" style="font-size: 2.5rem;">
                     <i class="fa-solid fa-circle-notch fa-spin text-white opacity-75"></i>
                 </div>
-
                 <div class="flex-grow-1" style="z-index: 2;">
                     <h5 class="fw-bold mb-1 text-white">${term.name}</h5>
                     <div class="d-flex align-items-center mb-2 text-white opacity-90">
@@ -192,9 +156,7 @@ function crearTarjetaServidorHTML(term) {
                         MASTER NODE
                     </span>
                 </div>
-
                 <i class="fa-solid fa-server server-icon-large text-white opacity-10"></i>
-
                 <div class="hover-overlay" style="border-radius: 10px;">
                     <button class="view-details-btn shadow" onclick="abrirModalDetalle(${term.id}, '${term.name}', '${term.ip_address}', true)">
                         <i class="fa-solid fa-eye me-1"></i> Gestionar Jobs
@@ -207,13 +169,10 @@ function crearTarjetaServidorHTML(term) {
 }
 
 /* =========================================
-   CONSULTA INDIVIDUAL (Core)
+   CONSULTA INDIVIDUAL
    ========================================= */
 async function consultarCajaIndividual(id) {
-    // --- CAMBIO AQUÍ: Feedback visual inmediato ---
     marcarCargaVisual(id); 
-    // ----------------------------------------------
-
     try {
         const res = await fetch(`/dashboard/api/terminals/${id}/jobs`);
         const result = await res.json();
@@ -223,12 +182,7 @@ async function consultarCajaIndividual(id) {
             const serverTime = result.serverTime;
             const estadoGlobal = calcularEstadoGlobal(jobs);
 
-            // A. Actualizar Tarjeta (Tab 1)
-            // Esto sobrescribirá el spinner con el icono de éxito/error
             actualizarTarjetaVisual(id, estadoGlobal);
-
-            // B. Actualizar Matriz (Tab 2)
-            // Esto sobrescribirá el spinner de la tabla con los datos reales
             renderizarFilasMatriz(id, jobs, serverTime);
 
         } else {
@@ -266,11 +220,9 @@ function actualizarTarjetaVisual(id, status) {
     if(!card) return;
 
     card.className = `pos-card status-${status}`;
-    
     let icon = 'fa-circle-check';
     if(status === 'error') icon = 'fa-triangle-exclamation';
     if(status === 'warning') icon = 'fa-clock-rotate-left';
-    
     iconContainer.innerHTML = `<i class="fa-solid ${icon}"></i>`;
 }
 
@@ -311,98 +263,55 @@ function crearTablaMatrizHTML(term, colClass = 'col-12 col-md-6', cardClass = ''
 }
 
 function renderizarFilasMatriz(id, jobs, serverTime) {
-    // Buscar el terminal/servidor en el caché global
     const terminal = globalTerminalsCache.find(t => t.id === id);
     if (!terminal) return;
     
+    // IMPORTANTE: Detectamos si es servidor
     const isServer = terminal.is_server === 1;
     
-    // Si es servidor, usar su tbody individual
+    // Lógica para SERVIDOR (Matriz individual)
     if (isServer) {
         const tbody = document.getElementById(`matrix-tbody-${id}`);
         if (!tbody) return;
         tbody.innerHTML = '';
         
         jobs.forEach(job => {
-            const row = crearFilaJob(job, serverTime, '', isServer ? 1 : 0);
+            const row = crearFilaJob(job, serverTime, '', isServer);
             tbody.appendChild(row);
         });
         return;
     }
     
-    // Si es terminal, usar el tbody compartido
+    // Lógica para TERMINALES (Matriz compartida)
     const matrixGrid = document.getElementById('matrix-grid');
     if(!matrixGrid) return;
     
     const terminalName = terminal.name;
-    
-    // Eliminar mensaje de cargando si existe
     const loadingRow = matrixGrid.querySelector('td[colspan="7"]');
-    if (loadingRow) {
-        loadingRow.parentElement.remove();
-    }
+    if (loadingRow) loadingRow.parentElement.remove();
     
-    // Eliminar filas anteriores de esta terminal si existen
     const existingRows = matrixGrid.querySelectorAll(`tr[data-terminal-id="${id}"]`);
     existingRows.forEach(row => row.remove());
 
-    // Crear todas las filas de esta terminal
     const newRows = [];
     jobs.forEach((job, index) => {
-        // --- ESTADO (Outcome) ---
-        let outcomeBadge = 'bg-secondary';
-        if (job.LastOutcome === 'Exitoso') outcomeBadge = 'bg-success';
-        else if (job.LastOutcome === 'Fallido') outcomeBadge = 'bg-danger';
-        else if (job.LastOutcome === 'Cancelado') outcomeBadge = 'bg-warning text-dark';
-        
-        // --- EJECUCIÓN (Execution) ---
-        let execBadge = 'bg-secondary';
-        let execText = 'Stopped';
-        if (job.ExecutionStatus === 'Running') { execBadge = 'bg-warning text-dark'; execText = 'En ejecución'; }
-        else if (job.ExecutionStatus === 'Idle') { execBadge = 'bg-light text-dark border'; execText = 'Detenido'; }
-
-        // --- FECHAS ---
-        let lastRunDateFmt = '||';
-        if (job.LastRunDate) {
-            const parts = window.dateFormatter(job.LastRunDate, isServer ? 1 : 0).split(',');
-            if (parts.length >= 2) {
-                lastRunDateFmt = `${parts[0].trim()} || ${parts[1].trim()}`;
-            } else {
-                lastRunDateFmt = window.dateFormatter(job.LastRunDate, isServer ? 1 : 0);
-            }
-        }
-        
-        // --- DURACIÓN ---
-        const duration = calcularDuracion(job.LastRunDate, serverTime, job.ExecutionStatus, job.LastDuration, isServer ? 1 : 0);
-
-        // --- INICIO (Si está corriendo) ---
-        let startTime = '-';
-        if (job.ExecutionStatus === 'Running' && job.LastRunDate) {
-             const parts = window.dateFormatter(job.LastRunDate, isServer ? 1 : 0).split(',');
-             if(parts.length >= 2) startTime = parts[1].trim();
-        }
-        
-        // Solo mostrar el nombre de la terminal en la primera fila (con rowspan)
         const terminalCell = index === 0 
             ? `<td rowspan="${jobs.length}" class="align-middle fw-bold text-center bg-light">${terminalName}</td>`
             : '';
 
-        const row = crearFilaJob(job, serverTime, terminalCell, isServer ? 1 : 0);
+        // Pasamos isServer (0) para que use formatDateRaw
+        const row = crearFilaJob(job, serverTime, terminalCell, 0); 
         row.setAttribute('data-terminal-id', id);
         row.setAttribute('data-terminal-name', terminalName);
         newRows.push(row);
     });
     
-    // Encontrar la posición correcta para insertar (orden alfabético)
     const allTerminalRows = Array.from(matrixGrid.querySelectorAll('tr[data-terminal-name]'));
     
     if (allTerminalRows.length === 0) {
-        // Si no hay filas, agregar al final
         newRows.forEach(row => matrixGrid.appendChild(row));
     } else {
-        // Buscar dónde insertar
         let insertBeforeRow = null;
-        
         for (const existingRow of allTerminalRows) {
             const existingName = existingRow.getAttribute('data-terminal-name');
             if (terminalName.localeCompare(existingName) < 0) {
@@ -410,54 +319,59 @@ function renderizarFilasMatriz(id, jobs, serverTime) {
                 break;
             }
         }
-        
         if (insertBeforeRow) {
-            // Insertar antes de la fila encontrada
             newRows.forEach(row => matrixGrid.insertBefore(row, insertBeforeRow));
         } else {
-            // Insertar al final
             newRows.forEach(row => matrixGrid.appendChild(row));
         }
     }
 }
 
 // Función auxiliar para crear una fila de job
-function crearFilaJob(job, serverTime, terminalCellHTML = '', isServer = 0) {
-    // --- ESTADO (Outcome) ---
+function crearFilaJob(job, serverTime, terminalCellHTML = '', isServer = false) {
     let outcomeBadge = 'bg-secondary';
     if (job.LastOutcome === 'Exitoso') outcomeBadge = 'bg-success';
     else if (job.LastOutcome === 'Fallido') outcomeBadge = 'bg-danger';
     else if (job.LastOutcome === 'Cancelado') outcomeBadge = 'bg-warning text-dark';
     
-    // --- EJECUCIÓN (Execution) ---
     let execBadge = 'bg-secondary';
     let execText = 'Stopped';
     if (job.ExecutionStatus === 'Running') { execBadge = 'bg-warning text-dark'; execText = 'En ejecución'; }
     else if (job.ExecutionStatus === 'Idle') { execBadge = 'bg-light text-dark border'; execText = 'Detenido'; }
 
-    // --- FECHAS ---
+    // --- SELECCIÓN DE FORMATEO DE FECHA ---
+    // Si es Servidor -> formatDateToLocal (ajustar zona horaria)
+    // Si es Caja -> formatDateRaw (mantener números originales)
     let lastRunDateFmt = '||';
     if (job.LastRunDate) {
-        const parts = window.dateFormatter(job.LastRunDate, isServer).split(',');
+        const fmtFunc = isServer ? window.formatDateToLocal : window.formatDateRaw;
+        const formattedDate = fmtFunc(job.LastRunDate);
+
+        const parts = formattedDate.split(',');
         if (parts.length >= 2) {
             lastRunDateFmt = `${parts[0].trim()} || ${parts[1].trim()}`;
         } else {
-            lastRunDateFmt = window.dateFormatter(job.LastRunDate, isServer);
+            lastRunDateFmt = formattedDate;
         }
     }
     
-    // --- DURACIÓN ---
     const duration = calcularDuracion(job.LastRunDate, serverTime, job.ExecutionStatus, job.LastDuration, isServer);
 
-    // --- INICIO (Si está corriendo) ---
     let startTime = '-';
     if (job.ExecutionStatus === 'Running' && job.LastRunDate) {
-         const parts = window.dateFormatter(job.LastRunDate, isServer).split(',');
+         const fmtFunc = isServer ? window.formatDateToLocal : window.formatDateRaw;
+         const parts = fmtFunc(job.LastRunDate).split(',');
          if(parts.length >= 2) startTime = parts[1].trim();
     }
 
+    const isOld = esFechaAntigua(job.LastRunDate, serverTime, isServer);
+    const rowClass = (isOld && job.ExecutionStatus !== 'Running') ? 'table-warning' : '';
+    const dateWarningIcon = (isOld && job.ExecutionStatus !== 'Running') 
+        ? '<i class="fa-solid fa-calendar-xmark text-danger me-1" title="Ejecutado en día distinto al actual"></i>' 
+        : '';
+
     const row = document.createElement('tr');
-    row.className = 'mini-job-row small align-middle';
+    row.className = `mini-job-row small align-middle ${rowClass}`;
     row.innerHTML = `
         ${terminalCellHTML}
         <td class="text-truncate" style="max-width: 200px;" title="${job.JobName}">
@@ -469,8 +383,8 @@ function crearFilaJob(job, serverTime, terminalCellHTML = '', isServer = 0) {
         <td class="text-center">
             <span class="badge ${execBadge} w-100">${execText}</span>
         </td>
-        <td class="text-center text-muted small">
-            ${lastRunDateFmt}
+        <td class="text-center small ${isOld ? 'fw-bold text-dark' : 'text-muted'}">
+            ${dateWarningIcon} ${lastRunDateFmt}
         </td>
         <td class="text-center font-monospace small">
             ${duration}
@@ -482,35 +396,19 @@ function crearFilaJob(job, serverTime, terminalCellHTML = '', isServer = 0) {
     return row;
 }
 
-
-/* =========================================
-   HELPER: INDICADOR VISUAL DE CARGA
-   ========================================= */
 function marcarCargaVisual(id) {
-    // 1. Actualizar Tarjeta del Grid (Tab 1)
     const card = document.getElementById(`card-${id}`);
     const iconContainer = document.getElementById(`icon-${id}`);
     
     if (card && iconContainer) {
-        // Limpiamos colores de estado previos
         card.classList.remove('status-success', 'status-warning', 'status-error');
-        card.classList.add('status-loading'); // La volvemos gris
-        
-        // Cambiamos el icono por un spinner
+        card.classList.add('status-loading');
         iconContainer.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-secondary"></i>';
     }
 
-    // 2. Actualizar Tabla de Matriz (Tab 2)
     const tbody = document.getElementById(`matrix-tbody-${id}`);
     if (tbody) {
-        // Reemplazamos las filas actuales por un mini spinner centrado
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6" class="text-center py-3 text-muted">
-                    <i class="fa-solid fa-circle-notch fa-spin"></i>
-                </td>
-            </tr>
-        `;
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-3 text-muted"><i class="fa-solid fa-circle-notch fa-spin"></i></td></tr>`;
     }
 }
 
@@ -520,8 +418,6 @@ function marcarCargaVisual(id) {
 async function abrirModalDetalle(id, name, ip, forceRefresh = false) {
     currentTerminalIdForModal = id;
     const modalHeader = document.getElementById('modalHeader');
-    
-    // 1. Mostrar Modal en estado "Cargando"
     detailsModal.show();
     modalHeader.className = 'modal-header header-loading';
     document.getElementById('modalTitle').innerText = name;
@@ -529,15 +425,8 @@ async function abrirModalDetalle(id, name, ip, forceRefresh = false) {
     document.getElementById('modalId').innerText = `ID: ${id}`;
     document.getElementById('jobsTableBody').innerHTML = '<tr><td colspan="5" class="text-center py-5"><div class="spinner-border text-primary"></div><br>Actualizando datos en tiempo real...</td></tr>';
 
-    // 2. Si se pidió refresh forzoso (al hacer click en "Ver más"), consultamos de nuevo
-    // Esto actualiza el modal Y TAMBIÉN la tarjeta de fondo (por si cambió el estado)
     if (forceRefresh) {
-        consultarCajaIndividual(id).then(() => {
-            // Una vez actualizado el dato global, repintamos el modal con esa data fresca
-            // (Hacemos un fetch rápido o podríamos haber guardado la data en caché, 
-            // pero para asegurar consistencia hacemos el fetch modal específico)
-             llenarModalConFetch(id);
-        });
+        consultarCajaIndividual(id).then(() => llenarModalConFetch(id));
     } else {
         llenarModalConFetch(id);
     }
@@ -553,70 +442,82 @@ async function llenarModalConFetch(id) {
             const serverTime = result.serverTime;
             const status = calcularEstadoGlobal(jobs);
             
-            // Obtener información del terminal para saber si es servidor
             const terminal = globalTerminalsCache.find(t => t.id === id);
-            const isServer = terminal ? (terminal.is_server === 1 ? 1 : 0) : 0;
+            const isServer = terminal ? (terminal.is_server === 1) : false;
             
-            // Actualizar header
             const header = document.getElementById('modalHeader');
             header.className = `modal-header header-${status}`;
             
-            // Renderizar Tabla
             const tbody = document.getElementById('jobsTableBody');
             tbody.innerHTML = '';
             
             jobs.forEach(job => {
                 let badgeClass = 'bg-secondary';
                 let icon = '';
-                
-                // Updated to use LastOutcome instead of LastStatus
                 if (job.LastOutcome === 'Exitoso') { badgeClass = 'bg-success'; icon = '<i class="fa-solid fa-check"></i>'; }
                 if (job.LastOutcome === 'Fallido') { badgeClass = 'bg-danger'; icon = '<i class="fa-solid fa-xmark"></i>'; }
                 if (job.ExecutionStatus === 'Running') { badgeClass = 'bg-warning text-dark'; icon = '<i class="fa-solid fa-gear fa-spin"></i>'; }
 
                 const duration = calcularDuracion(job.LastRunDate, serverTime, job.ExecutionStatus, job.LastDuration, isServer);
-                const fechaFmt = window.dateFormatter(job.LastRunDate, isServer); 
                 
-                // Limpieza del mensaje para que no rompa el atributo HTML title (escapar comillas)
+                // --- SELECCIÓN DE FORMATEO DE FECHA ---
+                const fmtFunc = isServer ? window.formatDateToLocal : window.formatDateRaw;
+                const fechaFmt = fmtFunc(job.LastRunDate); 
+                
                 const rawMsg = job.LastMessage || '';
                 const safeMsg = rawMsg.replace(/"/g, '&quot;'); 
-
                 const displayStatus = job.ExecutionStatus === 'Running' ? 'En Ejecución' : job.LastOutcome;
+                const isOld = esFechaAntigua(job.LastRunDate, serverTime, isServer);
+                const rowStyle = (isOld && job.ExecutionStatus !== 'Running') ? 'background-color: #fff3cd;' : '';
+                const dateStyle = (isOld && job.ExecutionStatus !== 'Running') ? 'color: #856404; font-weight: bold;' : 'color: #6c757d;';
+                const dateIcon = (isOld && job.ExecutionStatus !== 'Running') ? '<i class="fa-solid fa-triangle-exclamation"></i> ' : '';
+
+                let actionButtons = '';
+                const btnPlayDisabled = job.ExecutionStatus === 'Running' ? 'disabled' : '';
+                actionButtons += `<button class="btn btn-sm btn-outline-success me-1" ${btnPlayDisabled} title="Ejecutar" onclick="ejecutarJobDesdeModal('${job.JobName}')"><i class="fa-solid fa-play"></i></button>`;
+                
+                if (job.ExecutionStatus === 'Running') {
+                    actionButtons += `<button class="btn btn-sm btn-outline-danger me-1" title="Detener forzosamente" onclick="detenerJobDesdeModal('${job.JobName}')"><i class="fa-solid fa-stop"></i></button>`;
+                }
+                actionButtons += `<button class="btn btn-sm btn-outline-primary" title="Ver Historial" onclick="verHistorialJob('${job.JobName}')"><i class="fa-solid fa-clock-rotate-left"></i></button>`;
 
                 tbody.innerHTML += `
-                    <tr>
+                    <tr style="${rowStyle}">
                         <td><span class="badge ${badgeClass}">${icon} ${displayStatus}</span></td>
                         <td class="fw-bold">${job.JobName}</td>
                         <td>
                             <div class="small fw-bold">${duration}</div>
-                            <div class="text-muted" style="font-size:0.75rem">${fechaFmt}</div>
+                            <div style="font-size:0.75rem; ${dateStyle}">
+                                ${dateIcon}${fechaFmt}
+                            </div>
                         </td>
-                        
                         <td class="small text-muted text-truncate" style="max-width: 150px; cursor: help;" title="${safeMsg}">
                             ${rawMsg}
                         </td>
-                        
-                        <td>
-                            <button class="btn btn-sm btn-outline-dark" onclick="ejecutarJobDesdeModal('${job.JobName}')">
-                                <i class="fa-solid fa-play"></i>
-                            </button>
+                        <td class="text-end text-nowrap">
+                            ${actionButtons}
                         </td>
                     </tr>
                 `;
             });
-
         }
     } catch (e) { console.error(e); }
 }
 
-/* =========================================
-   UTILIDADES
-   ========================================= */
 function calcularEstadoGlobal(jobs) {
     if(!jobs || jobs.length === 0) return 'warning';
-    if(jobs.some(j => j.LastOutcome === 'Fallido')) return 'error';
     if(jobs.some(j => j.ExecutionStatus === 'Running')) return 'warning';
+    if(jobs.some(j => j.LastOutcome === 'Fallido')) return 'error';
     return 'success';
+}
+
+function esFechaAntigua(jobDateStr, serverTimeStr, isServer = false) {
+    if (!jobDateStr || !serverTimeStr) return false;
+    let d1Str = !isServer ? jobDateStr.replace(/Z$/, '') : jobDateStr;
+    let d2Str = !isServer ? serverTimeStr.replace(/Z$/, '') : serverTimeStr;
+    const jobDate = new Date(d1Str);
+    const serverDate = new Date(d2Str);
+    return jobDate.toDateString() !== serverDate.toDateString();
 }
 
 function marcarErrorVisual(id) {
@@ -625,48 +526,25 @@ function marcarErrorVisual(id) {
     if(tbody) tbody.innerHTML = '<tr><td colspan="6" class="text-danger text-center"><small>Error de conexión</small></td></tr>';
 }
 
-// CÁLCULO DE DURACIÓN
-function calcularDuracion(startDateStr, serverDateStr, executionStatus, lastDurationStr, isServer = 0) {
-    // 1. Si NO está corriendo, devolvemos la duración estática que viene del backend
+function calcularDuracion(startDateStr, serverDateStr, executionStatus, lastDurationStr, isServer = false) {
     if (executionStatus !== 'Running') {
         return lastDurationStr || '00:00:00';
     }
-
-    // 2. Si ESTÁ corriendo, calculamos tiempo transcurrido (serverTime - lastRunDate)
     if (!startDateStr || !serverDateStr) return 'Calculando...';
-
-    // Ahora serverDateStr viene DIRECTAMENTE del SQL Server de la terminal (gracias al cambio en el backend)
-    // Y startDateStr (LastRunDate) también viene del mismo SQL Server.
-    // Por lo tanto, ambos están sincronizados y en la misma zona horaria.
-    // Solo necesitamos asegurarnos de parsearlos correctamente.
 
     let start, nowServer;
     
-    // Parseamos ambas fechas. 
-    // Nota: Aunque LastRunDate venga sin Z (en cajas) y serverDateStr venga con Z (o viceversa),
-    // al venir del mismo servidor, la diferencia relativa es la correcta.
-    // Sin embargo, para evitar problemas de interpretación del navegador, normalizamos:
-    
-    if (isServer === 0) {
-        // Cajas: LastRunDate suele venir sin Z (YYYY-MM-DDTHH:mm:ss.sss)
-        // serverDateStr ahora viene de GETDATE() en SQL Server, que devuelve YYYY-MM-DDTHH:mm:ss.sssZ (driver suele añadir Z)
-        
-        // Estrategia: Tratar ambas como fechas UTC para obtener la diferencia absoluta
-        // Eliminar Z de ambas para que el navegador las interprete igual (como local o como sea, pero IGUAL)
+    if (!isServer) {
         const s1 = startDateStr.replace(/Z$/, '');
         const s2 = serverDateStr.replace(/Z$/, '');
-        
         start = new Date(s1);
         nowServer = new Date(s2);
     } else {
-        // Servidores: Ambas suelen venir con Z
         start = new Date(startDateStr);
         nowServer = new Date(serverDateStr);
     }
 
-    // Diferencia en milisegundos
     let diff = nowServer - start;
-    
     if (diff < 0) diff = 0; 
 
     const totalSeconds = Math.floor(diff / 1000);
@@ -680,20 +558,6 @@ function calcularDuracion(startDateStr, serverDateStr, executionStatus, lastDura
 
     return `<span class="text-primary fw-bold"><i class="fa-solid fa-stopwatch me-1"></i> ${hStr}:${mStr}:${sStr}</span>`;
 }
-
-// Función de formato de fecha
-window.dateFormatter = (value, is_server = 0) => {
-    if (!value) return '-';
-
-    // Si es servidor (is_server === 1), eliminar la "Z" del string si existe
-    let dateString = value;
-    if (is_server === 0) {
-        dateString = value.replace(/Z$/, '');
-    }
-    
-    const date = new Date(dateString);
-    return date.toLocaleString();
-};
 
 /* =========================================
    ACCIÓN: EJECUTAR JOB DESDE EL MODAL
@@ -757,5 +621,106 @@ window.ejecutarJobDesdeModal = async (jobName) => {
     } catch (error) {
         console.error(error);
         showErrorToast('Error de comunicación con el servidor');
+    }
+};
+
+/* =========================================
+   ACCIÓN: DETENER JOB
+   ========================================= */
+window.detenerJobDesdeModal = async (jobName) => {
+    const confirm = await Swal.fire({
+        title: '¿Detener Job?',
+        html: `Vas a forzar la detención de: <strong>${jobName}</strong>.<br><span class="text-danger small">Esto puede dejar procesos inconclusos.</span>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: 'Sí, detener',
+        cancelButtonText: 'Cancelar'
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+        showInfoToast('Enviando orden de parada...');
+
+        const res = await fetch(`/dashboard/api/terminals/${currentTerminalIdForModal}/stop`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jobName })
+        });
+
+        const result = await res.json();
+
+        if (result.success) {
+            showSuccessToast('Job detenido');
+            // Recarga rápida para reflejar cambio
+            setTimeout(() => {
+                consultarCajaIndividual(currentTerminalIdForModal);
+                llenarModalConFetch(currentTerminalIdForModal);
+            }, 1500);
+        } else {
+            showErrorToast(result.error);
+        }
+    } catch (error) {
+        showErrorToast('Error de comunicación');
+    }
+};
+
+/* =========================================
+   ACCIÓN: VER HISTORIAL
+   ========================================= */
+const historyModal = new bootstrap.Modal(document.getElementById('historyModal'));
+
+window.verHistorialJob = async (jobName) => {
+    // 1. Abrir modal
+    historyModal.show();
+    
+    // UI Inicial
+    document.getElementById('historyJobTitle').innerText = jobName;
+    document.getElementById('historyTerminalName').innerText = `ID Terminal: ${currentTerminalIdForModal}`;
+    const tbody = document.getElementById('historyTableBody');
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>';
+
+    try {
+        // 2. Fetch
+        // Usamos encodeURIComponent por si el jobName tiene espacios o caracteres raros
+        const res = await fetch(`/dashboard/api/terminals/${currentTerminalIdForModal}/history?name=${encodeURIComponent(jobName)}`);
+        const result = await res.json();
+
+        if (result.success) {
+            tbody.innerHTML = '';
+            const history = result.data;
+
+            if (history.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Sin historial reciente.</td></tr>';
+                return;
+            }
+
+            history.forEach(h => {
+                let badge = 'bg-secondary';
+                if(h.StatusText === 'Exitoso') badge = 'bg-success';
+                else if(h.StatusText === 'Fallido') badge = 'bg-danger';
+                
+                // Formatear fecha
+                // Nota: Asumimos que la API ya devuelve fecha legible gracias a agent_datetime
+                const dateFmt = formatDateRaw(h.RunDate);
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-size:0.85rem">${dateFmt}</td>
+                        <td><span class="badge ${badge}">${h.StatusText}</span></td>
+                        <td class="font-monospace small">${h.Duration}</td>
+                        <td class="small text-muted text-truncate" style="max-width: 200px;" title="${h.message}">
+                            ${h.message}
+                        </td>
+                    </tr>
+                `;
+            });
+
+        } else {
+            tbody.innerHTML = `<tr><td colspan="4" class="text-danger text-center">${result.error}</td></tr>`;
+        }
+    } catch (error) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-danger text-center">Error obteniendo historial</td></tr>';
     }
 };

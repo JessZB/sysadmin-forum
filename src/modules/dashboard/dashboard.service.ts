@@ -112,9 +112,10 @@ export const getTerminalJobs = async (terminalId: number) => {
             return { jobs: mappedJobs, terminalTime };
 
         } else {
-            // --- LÓGICA PARA CAJAS (QUERY DIRECTA) ---
-            // Usamos agent_datetime porque las cajas suelen tener versiones antiguas/compatibles
-            const query = `
+            // --- LÓGICA HÍBRIDA (TRY/CATCH) ---
+
+            // 1. Definimos la Query COMPLETA (La que te gusta, con historial)
+            const queryFull = `
                 SELECT 
                     j.name AS JobName,
                     CASE 
@@ -147,8 +148,45 @@ export const getTerminalJobs = async (terminalId: number) => {
                 WHERE j.enabled = 1 AND j.name != 'syspolicy_purge_history'
             `;
 
-            const result = await pool.request().query(query);
-            return { jobs: result.recordset, terminalTime };
+            try {
+                // INTENTO A: Ejecutar Query Completa (Para Cajas con permisos)
+                const result = await pool.request().query(queryFull);
+                return { jobs: result.recordset, terminalTime };
+
+            } catch (error: any) {
+                // Si el error es de permisos (SELECT permission denied), usamos el Plan B
+                if (error.message && (error.message.includes('permission was denied') || error.message.includes('sysjobhistory'))) {
+                    console.warn(`Permisos restringidos en terminal ${terminalId}, usando modo seguro.`);
+
+                    // INTENTO B: Query Segura (Sin sysjobhistory, para el Servidor restringido)
+                    const querySafe = `
+                        SELECT 
+                            j.name AS JobName,
+                            CASE 
+                                WHEN ja.start_execution_date IS NOT NULL AND ja.stop_execution_date IS NULL THEN 'Running'
+                                ELSE 'Idle'
+                            END AS ExecutionStatus,
+                            CASE 
+                                WHEN ja.start_execution_date IS NOT NULL AND ja.stop_execution_date IS NULL THEN 'En Ejecución'
+                                ELSE 'Desconocido (Sin Permisos)' 
+                            END AS LastOutcome,
+                            ja.start_execution_date AS LastRunDate,
+                            NULL AS LastDuration,
+                            'Requiere permisos de lectura en sysjobhistory' AS LastMessage
+                        FROM msdb.dbo.sysjobs j
+                        LEFT JOIN msdb.dbo.sysjobactivity ja 
+                            ON j.job_id = ja.job_id
+                            AND ja.session_id = (SELECT TOP 1 session_id FROM msdb.dbo.syssessions ORDER BY session_id DESC)
+                        WHERE j.enabled = 1 AND j.name != 'syspolicy_purge_history'
+                    `;
+
+                    const resultSafe = await pool.request().query(querySafe);
+                    return { jobs: resultSafe.recordset, terminalTime };
+                } else {
+                    // Si es otro error (conexión, etc), lo lanzamos hacia arriba
+                    throw error;
+                }
+            }
         }
 
     } finally {
@@ -168,6 +206,62 @@ export const executeJob = async (terminalId: number, jobName: string) => {
             .input('job_name', sql.VarChar, jobName)
             .execute('msdb.dbo.sp_start_job');
         return true;
+    } finally {
+        if (pool) await pool.close();
+    }
+};
+
+// 4. Detener Job
+export const stopJob = async (terminalId: number, jobName: string) => {
+    const [rows] = await mainDbPool.query<RowDataPacket[]>('SELECT * FROM pos_terminals WHERE id = ?', [terminalId]);
+    const terminal = rows[0] as Terminal;
+
+    let pool: sql.ConnectionPool | null = null;
+    try {
+        pool = await getSqlServerConnection(terminal);
+        await pool.request()
+            .input('job_name', sql.VarChar, jobName)
+            .execute('msdb.dbo.sp_stop_job');
+        return true;
+    } finally {
+        if (pool) await pool.close();
+    }
+};
+
+// 5. Obtener Historial de un Job específico
+export const getJobHistory = async (terminalId: number, jobName: string) => {
+    const [rows] = await mainDbPool.query<RowDataPacket[]>('SELECT * FROM pos_terminals WHERE id = ?', [terminalId]);
+    const terminal = rows[0] as Terminal;
+
+    let pool: sql.ConnectionPool | null = null;
+    try {
+        pool = await getSqlServerConnection(terminal);
+
+        // Traemos los últimos 15 registros
+        const query = `
+            SELECT TOP 15
+                h.run_status,
+                CASE 
+                    WHEN h.run_status = 1 THEN 'Exitoso'
+                    WHEN h.run_status = 0 THEN 'Fallido'
+                    WHEN h.run_status = 2 THEN 'Reintentar'
+                    WHEN h.run_status = 3 THEN 'Cancelado'
+                    ELSE 'En curso' 
+                END AS StatusText,
+                msdb.dbo.agent_datetime(h.run_date, h.run_time) as RunDate,
+                STUFF(STUFF(RIGHT('000000' + CAST(h.run_duration AS VARCHAR(6)), 6), 3, 0, ':'), 6, 0, ':') AS Duration,
+                h.message
+            FROM msdb.dbo.sysjobhistory h
+            JOIN msdb.dbo.sysjobs j ON j.job_id = h.job_id
+            WHERE j.name = @jobName AND h.step_id = 0 -- step_id 0 es el resultado global del job
+            ORDER BY h.run_date DESC, h.run_time DESC
+        `;
+
+        const result = await pool.request()
+            .input('jobName', sql.VarChar, jobName)
+            .query(query);
+
+        return result.recordset;
     } finally {
         if (pool) await pool.close();
     }
