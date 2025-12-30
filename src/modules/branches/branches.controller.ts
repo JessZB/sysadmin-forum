@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import * as branchService from './branches.service';
+import * as auditService from '../audit/audit.service';
 
 export const renderList = (req: Request, res: Response) => {
     res.render('branches/list', {
@@ -18,22 +19,67 @@ export const getData = async (req: Request, res: Response) => {
 
 export const create = async (req: Request, res: Response) => {
     try {
-        // Auditoría: req.user.id crea el registro
-        await branchService.createBranch(req.body, res.locals.user.id);
+        const currentUser = res.locals.user;
+        const { name } = req.body;
+
+        await branchService.createBranch(req.body, currentUser.id);
+
+        // Auditoría
+        auditService.logAction(
+            currentUser.id,
+            currentUser.branch_id,
+            'CREATE',
+            'BRANCH',
+            null,
+            `Sucursal creada: ${name}`,
+            req.ip
+        );
+
         res.json({ success: true });
     } catch (e: any) { res.status(400).json({ success: false, error: e.message }); }
 };
 
 export const update = async (req: Request, res: Response) => {
     try {
-        await branchService.updateBranch(Number(req.params.id), req.body, res.locals.user.id);
+        const currentUser = res.locals.user;
+        const { name } = req.body;
+        const branchId = Number(req.params.id);
+
+        await branchService.updateBranch(branchId, req.body, currentUser.id);
+
+        // Auditoría
+        auditService.logAction(
+            currentUser.id,
+            currentUser.branch_id,
+            'UPDATE',
+            'BRANCH',
+            branchId,
+            `Sucursal actualizada: ${name}`,
+            req.ip
+        );
+
         res.json({ success: true });
     } catch (e: any) { res.status(400).json({ success: false, error: e.message }); }
 };
 
 export const remove = async (req: Request, res: Response) => {
     try {
-        await branchService.deleteBranch(Number(req.params.id));
+        const currentUser = res.locals.user;
+        const branchId = Number(req.params.id);
+
+        await branchService.deleteBranch(branchId);
+
+        // Auditoría
+        auditService.logAction(
+            currentUser.id,
+            currentUser.branch_id,
+            'DELETE',
+            'BRANCH',
+            branchId,
+            `Sucursal eliminada ID: ${branchId}`,
+            req.ip
+        );
+
         res.json({ success: true });
     } catch (e: any) { res.status(400).json({ success: false, error: e.message }); }
 };

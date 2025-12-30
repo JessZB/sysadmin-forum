@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SysAdmin Suite - Menú Principal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/custom-theme.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #457b9d 0%, #1d3557 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .menu-container {
+            max-width: 1200px;
+            width: 100%;
+            padding: 20px;
+        }
+
+        .header-section {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header-section h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header-section p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .menu-card {
+            background: white;
+            border-radius: 20px;
+            padding: 35px 25px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .menu-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, #457b9d, #a8dadc);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .menu-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .menu-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .menu-icon {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #457b9d 0%, #1d3557 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .menu-card.accent .menu-icon {
+            background: linear-gradient(135deg, #e63946 0%, #c62828 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .menu-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #1d3557;
+            margin-bottom: 8px;
+        }
+
+        .menu-description {
+            font-size: 0.9rem;
+            color: #457b9d;
+            margin: 0;
+        }
+
+        .user-info {
+            background: rgba(168, 218, 220, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+            border: 2px solid rgba(168, 218, 220, 0.3);
+        }
+
+        .user-info h5 {
+            margin: 0 0 5px 0;
+            font-weight: 600;
+        }
+
+        .user-info small {
+            opacity: 0.9;
+        }
+
+        .role-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+
+        .role-admin {
+            background: #a8dadc;
+            color: #1d3557;
+        }
+
+        .role-analista {
+            background: #f1faee;
+            color: #457b9d;
+            border: 2px solid #a8dadc;
+        }
+
+        .logout-btn {
+            background: linear-gradient(135deg, #e63946, #c62828);
+            border: none;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .logout-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(230, 57, 70, 0.4);
+            color: white;
+        }
+
+        /* Animación de entrada */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .menu-card {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        .menu-card:nth-child(1) {
+            animation-delay: 0.1s;
+        }
+
+        .menu-card:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .menu-card:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
+        .menu-card:nth-child(4) {
+            animation-delay: 0.4s;
+        }
+
+        .menu-card:nth-child(5) {
+            animation-delay: 0.5s;
+        }
+
+        .menu-card:nth-child(6) {
+            animation-delay: 0.6s;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="menu-container">
+        <!-- Header -->
+        <div class="header-section">
+            <h1><i class="fa-solid fa-server me-3"></i>SysAdmin Suite</h1>
+            <p>Panel de Control y Gestión</p>
+        </div>
+
+        <!-- User Info -->
+        <div class="user-info">
+            <h5>Bienvenido, <%= user.username %>
+            </h5>
+            <span class="role-badge <%= user.role === 'admin' ? 'role-admin' : 'role-analista' %>">
+                <%= user.role==='admin' ? 'Administrador' : 'Analista' %>
+            </span>
+            <% if (user.branch_name) { %>
+                <div class="mt-2">
+                    <small><i class="fa-solid fa-building me-1"></i>
+                        <%= user.branch_name %>
+                    </small>
+                </div>
+                <% } %>
+        </div>
+
+        <!-- Menu Grid -->
+        <div class="menu-grid">
+            <!-- Dashboard -->
+            <a href="/dashboard" class="menu-card">
+                <div class="menu-icon">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+                <h3 class="menu-title">Monitor Jobs</h3>
+                <p class="menu-description">Monitoreo de trabajos y terminales POS</p>
+            </a>
+
+            <!-- Terminales -->
+            <a href="/terminals" class="menu-card">
+                <div class="menu-icon">
+                    <i class="fa-solid fa-desktop"></i>
+                </div>
+                <h3 class="menu-title">Terminales</h3>
+                <p class="menu-description">Gestión de terminales POS</p>
+            </a>
+
+            <!-- Sucursales (Solo Admin) -->
+            <% if (user.role==='admin' ) { %>
+                <a href="/branches" class="menu-card">
+                    <div class="menu-icon">
+                        <i class="fa-solid fa-building"></i>
+                    </div>
+                    <h3 class="menu-title">Sucursales</h3>
+                    <p class="menu-description">Administrar sucursales</p>
+                </a>
+                <% } %>
+
+                    <!-- Usuarios (Solo Admin) -->
+                    <% if (user.role==='admin' ) { %>
+                        <a href="/users" class="menu-card">
+                            <div class="menu-icon">
+                                <i class="fa-solid fa-users"></i>
+                            </div>
+                            <h3 class="menu-title">Usuarios</h3>
+                            <p class="menu-description">Gestión de usuarios del sistema</p>
+                        </a>
+                        <% } %>
+
+                            <!-- Auditoría -->
+                            <a href="/audit" class="menu-card accent">
+                                <div class="menu-icon">
+                                    <i class="fa-solid fa-clock-rotate-left"></i>
+                                </div>
+                                <h3 class="menu-title">Auditoría</h3>
+                                <p class="menu-description">Registro de actividades</p>
+                            </a>
+        </div>
+
+        <!-- Logout Button -->
+        <div class="text-center">
+            <a href="/logout" class="logout-btn">
+                <i class="fa-solid fa-right-from-bracket me-2"></i>Cerrar Sesión
+            </a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

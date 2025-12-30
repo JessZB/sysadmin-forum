@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'secreto_super_seguro';
+const JWT_SECRET = process.env.JWT_SECRET || 'MI_CLAVE_SECRETA_COMPARTIDA';
 
 export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
     const token = req.cookies.auth_token;

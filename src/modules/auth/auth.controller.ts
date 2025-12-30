@@ -1,63 +1,60 @@
 import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { mainDbPool } from '../../shared/db/main.db';
-import { RowDataPacket } from 'mysql2';
+// Ya no necesitamos bcrypt ni jwt ni mainDbPool aquí, el servicio se encarga
+import * as authService from './auth.service';
+import * as auditService from '../audit/audit.service'; // Importamos el auditor
 
-const JWT_SECRET = process.env.JWT_SECRET || 'secreto_super_seguro';
-
-// GET: Muestra el formulario (Este SÍ renderiza vista)
+// GET: Muestra el formulario
 export const showLogin = (req: Request, res: Response) => {
-    if (req.cookies.auth_token) return res.redirect('/dashboard');
+    if (req.cookies.auth_token) return res.redirect('/home');
     res.render('auth/login');
 };
 
-// POST: Procesa el login (Este devuelve JSON)
+// POST: Procesa el login
 export const login = async (req: Request, res: Response) => {
     try {
         const { username, password } = req.body;
 
-        // 1. Buscar usuario
-        const [rows] = await mainDbPool.query<RowDataPacket[]>('SELECT * FROM sys_users WHERE username = ?', [username]);
+        // 1. LLAMAMOS AL SERVICIO (Él tiene la lógica de branches y validación)
+        const result = await authService.login(username, password);
 
-        if (rows.length === 0) {
-            // Devolvemos JSON con error 401 (Unauthorized)
+        // 2. Si el servicio retorna null, credenciales malas
+        if (!result) {
             return res.status(401).json({ success: false, error: 'Credenciales inválidas' });
         }
 
-        const user = rows[0];
+        // Si llegamos aquí, result trae { token, user } con todos los datos nuevos (branch_id, etc)
+        const { token, user } = result;
 
-        // 2. Verificar password
-        const validPassword = await bcrypt.compare(password, user.password_hash);
-        if (!validPassword) {
-            return res.status(401).json({ success: false, error: 'Credenciales inválidas' });
-        }
-
-        // 3. Crear Token
-        const token = jwt.sign(
-            { id: user.id, username: user.username, role: user.role },
-            JWT_SECRET,
-            { expiresIn: '8h' }
+        // 3. REGISTRAR AUDITORÍA (Login Exitoso)
+        // Usamos el ID y Branch del usuario que nos devolvió el servicio
+        auditService.logAction(
+            user.id,
+            user.branch_id,
+            'LOGIN',
+            'USER',
+            user.id,
+            `Inicio de sesión exitoso`,
+            req.ip
         );
 
-        // 4. Guardar Cookie
+        // 4. Guardar Cookie (HttpOnly)
+        // La lógica HTTP de cookies sí pertenece al controlador
         res.cookie('auth_token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production', // Solo HTTPS en prod
+            secure: process.env.NODE_ENV === 'production',
             maxAge: 28800000 // 8 horas
         });
 
-        // 5. RESPONDER CON ÉXITO (JSON)
-        // El frontend leerá esto y hará el window.location.href
-        return res.json({ success: true, redirectUrl: '/dashboard' });
+        // 5. Responder al Frontend
+        return res.json({ success: true, redirectUrl: '/home' });
 
     } catch (error) {
-        console.error(error);
+        console.error('Error en login controller:', error);
         return res.status(500).json({ success: false, error: 'Error interno del servidor' });
     }
 };
 
 export const logout = (req: Request, res: Response) => {
     res.clearCookie('auth_token');
-    res.redirect('/login');
+    res.redirect('/login'); // Asumo que tu ruta de login es /login o /auth/login
 };

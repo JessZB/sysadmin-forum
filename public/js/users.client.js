@@ -1,11 +1,11 @@
 // Formateador para el Rol (Badges)
 function roleFormatter(value, row, index) {
     if (value === 'admin') {
-        return '<span class="badge bg-danger">Administrador</span>';
+        return '<span class="badge badge-punch">Administrador</span>';
     } else if (value === 'analista') {
-        return '<span class="badge bg-primary">Analista</span>';
+        return '<span class="badge badge-cerulean">Analista</span>';
     } else {
-        return '<span class="badge bg-secondary">Visualizador</span>';
+        return '<span class="badge badge-frosted">Visualizador</span>';
     }
 }
 
@@ -21,7 +21,7 @@ function actionFormatter(value, row, index) {
     
     // Botón Editar
   let botones = `
-        <button class="btn btn-sm btn-outline-primary me-1" 
+        <button class="btn btn-sm btn-outline-cerulean me-1" 
             onclick="abrirModalEditar('${row.id}', '${row.username}', '${row.role}', '${row.branch_id}')">
             <i class="bi bi-pencil"></i>
         </button>
@@ -30,14 +30,14 @@ function actionFormatter(value, row, index) {
     // Usamos la variable global currentUserId definida en el EJS
     if (row.id !== currentUserId) {
         botones += `
-            <button class="btn btn-sm btn-outline-danger" 
+            <button class="btn btn-sm btn-outline-punch" 
                 onclick="eliminarUsuario('${row.id}')">
                 <i class="bi bi-trash"></i>
             </button>
         `;
     } else {
         botones += `
-            <button class="btn btn-sm btn-secondary" disabled title="No puedes eliminarte a ti mismo">
+            <button class="btn btn-sm btn-frosted" disabled title="No puedes eliminarte a ti mismo">
                 <i class="bi bi-trash"></i>
             </button>
         `;

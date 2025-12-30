@@ -5,12 +5,15 @@ import dotenv from 'dotenv';
 import express, { Application, Request, Response, NextFunction } from 'express';
 
 import * as authController from './modules/auth/auth.controller';
+import homeRoutes from './modules/home/home.routes';
 import usersRoutes from './modules/users/users.routes';
 import terminalsRoutes from './modules/terminals/terminals.routes';
 import dashboardRoutes from './modules/dashboard/dashboard.routes';
 import branchesRoutes from './modules/branches/brances.routes';
-import { requireAuth } from './shared/middlewares/auth.middleware';
+import auditRoutes from './modules/audit/audit.routes';
 import { notFoundHandler } from './shared/middlewares/not-found.middleware';
+import { requireAuth } from './shared/middlewares/auth.middleware';
+import { allowRoles } from './shared/middlewares/role.middleware';
 
 
 
@@ -34,9 +37,13 @@ app.use((req, res, next) => {
     next();
 });
 
-// Ruta Base
+// Ruta Base - Redirige al home si está autenticado, sino al login
 app.get('/', (req: Request, res: Response) => {
-    res.redirect('/login');
+    if (req.cookies.auth_token) {
+        res.redirect('/home');
+    } else {
+        res.redirect('/login');
+    }
 });
 
 // 1. Rutas Públicas
@@ -45,12 +52,23 @@ app.post('/login', authController.login);
 app.get('/logout', authController.logout);
 
 // 2. Rutas Protegidas (VISTAS)
-app.use('/terminals', requireAuth, terminalsRoutes);
-app.use('/dashboard', requireAuth, dashboardRoutes);
-app.use('/branches', requireAuth, branchesRoutes);
+// Home/Menu Principal: Admin y Analista
+app.use('/home', requireAuth, allowRoles(['admin', 'analista']), homeRoutes);
 
-// 3. Rutas Protegidas (API)
-app.use('/users', requireAuth, usersRoutes);
+// Terminales: Admin y Analista
+app.use('/terminals', requireAuth, allowRoles(['admin', 'analista']), terminalsRoutes);
+
+// Dashboard: Admin y Analista
+app.use('/dashboard', requireAuth, allowRoles(['admin', 'analista']), dashboardRoutes);
+
+// Sucursales: SOLO Admin
+app.use('/branches', requireAuth, allowRoles(['admin']), branchesRoutes);
+
+// Usuarios: SOLO Admin
+app.use('/users', requireAuth, allowRoles(['admin']), usersRoutes);
+
+// Auditoría: Admin y Analista
+app.use('/audit', requireAuth, allowRoles(['admin', 'analista']), auditRoutes);
 
 // Manejo de Rutas No Encontradas
 app.use(notFoundHandler);

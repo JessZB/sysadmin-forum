@@ -18,20 +18,20 @@ window.icons = {
 // Formatter para Estado (Activo/Inactivo)
 function statusFormatter(value, row) {
     if (value === 1) {
-        return '<span class="badge bg-success"><i class="bi bi-check-circle"></i> Activa</span>';
+        return '<span class="badge status-success-custom"><i class="bi bi-check-circle"></i> Activa</span>';
     } else {
-        return '<span class="badge bg-secondary"><i class="bi bi-x-circle"></i> Inactiva</span>';
+        return '<span class="badge status-idle"><i class="bi bi-x-circle"></i> Inactiva</span>';
     }
 }
 
 // Formatter para Acciones (Editar/Eliminar)
 function actionFormatter(value, row) {
     return `
-        <button class="btn btn-sm btn-outline-primary me-1" 
+        <button class="btn btn-sm btn-outline-cerulean me-1" 
             onclick="abrirModalEditar('${row.id}', '${row.name}', '${row.code}', '${escapeHtml(row.address || '')}', '${row.is_active}')">
             <i class="bi bi-pencil"></i>
         </button>
-        <button class="btn btn-sm btn-outline-danger" 
+        <button class="btn btn-sm btn-outline-punch" 
             onclick="eliminarBranch(${row.id}, '${row.name}')">
             <i class="bi bi-trash"></i>
         </button>

@@ -1,18 +1,18 @@
 // Formateador para el Estado (Badge)
 function statusFormatter(value, row, index) {
     if (value === 1 || value === true) {
-        return '<span class="badge bg-success"><i class="bi bi-check-circle"></i> Activo</span>';
+        return '<span class="badge status-success-custom"><i class="bi bi-check-circle"></i> Activo</span>';
     } else {
-        return '<span class="badge bg-secondary"><i class="bi bi-x-circle"></i> Inactivo</span>';
+        return '<span class="badge status-idle"><i class="bi bi-x-circle"></i> Inactivo</span>';
     }
 }
 
 // Formateador para el Tipo (Badge)
 function typeFormatter(value, row, index) {
     if (value === 1 || value === true) {
-        return '<span class="badge bg-primary"><i class="bi bi-server"></i> Servidor</span>';
+        return '<span class="badge badge-cerulean"><i class="bi bi-server"></i> Servidor</span>';
     } else {
-        return '<span class="badge bg-info text-dark"><i class="bi bi-pc-display"></i> Caja</span>';
+        return '<span class="badge badge-frosted"><i class="bi bi-pc-display"></i> Caja</span>';
     }
 }
 
@@ -24,7 +24,7 @@ function actionFormatter(value, row, index) {
     const branchId = row.branch_id || 1;
     
     let botones = `
-        <button class="btn btn-sm btn-outline-primary me-1" 
+        <button class="btn btn-sm btn-outline-cerulean me-1" 
             onclick="abrirModalEditar('${row.id}', '${row.name}', '${row.ip_address}', '${row.db_user}', ${isServer}, ${isActive}, ${branchId})">
             <i class="bi bi-pencil"></i>
         </button>
@@ -32,7 +32,7 @@ function actionFormatter(value, row, index) {
 
     // Botón Eliminar
     botones += `
-        <button class="btn btn-sm btn-outline-danger" 
+        <button class="btn btn-sm btn-outline-punch" 
             onclick="eliminarTerminal('${row.id}')">
             <i class="bi bi-trash"></i>
         </button>

@@ -1,0 +1,401 @@
+/* ============================================
+   SYSADMIN SUITE - SISTEMA DE DISEÑO
+   Paleta de Colores Personalizada
+   ============================================ */
+
+:root {
+    /* Colores Principales */
+    --punch-red: #e63946;
+    --honeydew: #f1faee;
+    --frosted-blue: #a8dadc;
+    --cerulean: #457b9d;
+    --oxford-navy: #1d3557;
+
+    /* Gradientes */
+    --gradient-primary: linear-gradient(135deg, var(--cerulean), var(--oxford-navy));
+    --gradient-accent: linear-gradient(135deg, var(--frosted-blue), var(--cerulean));
+    --gradient-danger: linear-gradient(135deg, var(--punch-red), #c62828);
+    --gradient-success: linear-gradient(135deg, #2e7d32, #1b5e20);
+    --gradient-warning: linear-gradient(135deg, #f57c00, #e65100);
+
+    /* Sombras */
+    --shadow-sm: 0 2px 4px rgba(29, 53, 87, 0.1);
+    --shadow-md: 0 4px 6px rgba(29, 53, 87, 0.15);
+    --shadow-lg: 0 10px 20px rgba(29, 53, 87, 0.2);
+    --shadow-xl: 0 15px 30px rgba(29, 53, 87, 0.25);
+}
+
+/* ============================================
+   BOTONES PERSONALIZADOS
+   ============================================ */
+
+.btn-cerulean {
+    background: var(--gradient-primary);
+    color: white;
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.btn-cerulean:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    color: white;
+}
+
+.btn-frosted {
+    background: var(--frosted-blue);
+    color: var(--oxford-navy);
+    border: 2px solid var(--cerulean);
+    transition: all 0.3s ease;
+}
+
+.btn-frosted:hover {
+    background: var(--cerulean);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.btn-punch {
+    background: var(--gradient-danger);
+    color: white;
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.btn-punch:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    color: white;
+}
+
+.btn-outline-cerulean {
+    background: transparent;
+    color: var(--cerulean);
+    border: 2px solid var(--cerulean);
+    transition: all 0.3s ease;
+}
+
+.btn-outline-cerulean:hover {
+    background: var(--cerulean);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.btn-outline-punch {
+    background: transparent;
+    color: var(--punch-red);
+    border: 2px solid var(--punch-red);
+    transition: all 0.3s ease;
+}
+
+.btn-outline-punch:hover {
+    background: var(--punch-red);
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* ============================================
+   BADGES Y ESTADOS
+   ============================================ */
+
+.badge-cerulean {
+    background: var(--cerulean);
+    color: white;
+}
+
+.badge-frosted {
+    background: var(--frosted-blue);
+    color: var(--oxford-navy);
+}
+
+.badge-punch {
+    background: var(--punch-red);
+    color: white;
+}
+
+.badge-oxford {
+    background: var(--oxford-navy);
+    color: white;
+}
+
+.badge-honeydew {
+    background: var(--honeydew);
+    color: var(--oxford-navy);
+    border: 1px solid var(--frosted-blue);
+}
+
+/* Estados de Jobs/Terminales */
+.status-running {
+    background: var(--gradient-warning) !important;
+    color: white !important;
+    border: none !important;
+}
+
+.status-success-custom {
+    background: var(--gradient-success) !important;
+    color: white !important;
+    border: none !important;
+}
+
+.status-error-custom {
+    background: var(--gradient-danger) !important;
+    color: white !important;
+    border: none !important;
+}
+
+.status-idle {
+    background: var(--frosted-blue) !important;
+    color: var(--oxford-navy) !important;
+    border: 1px solid var(--cerulean) !important;
+}
+
+/* ============================================
+   CARDS Y CONTENEDORES
+   ============================================ */
+
+.card-cerulean {
+    border-left: 5px solid var(--cerulean);
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
+}
+
+.card-cerulean:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-3px);
+}
+
+.card-header-cerulean {
+    background: var(--gradient-primary);
+    color: white;
+    font-weight: 600;
+}
+
+.card-header-frosted {
+    background: var(--frosted-blue);
+    color: var(--oxford-navy);
+    font-weight: 600;
+}
+
+.card-header-punch {
+    background: var(--gradient-danger);
+    color: white;
+    font-weight: 600;
+}
+
+/* ============================================
+   ALERTAS PERSONALIZADAS
+   ============================================ */
+
+.alert-cerulean {
+    background: linear-gradient(135deg, rgba(69, 123, 157, 0.1), rgba(168, 218, 220, 0.1));
+    border-left: 4px solid var(--cerulean);
+    color: var(--oxford-navy);
+}
+
+.alert-frosted {
+    background: rgba(168, 218, 220, 0.2);
+    border-left: 4px solid var(--frosted-blue);
+    color: var(--oxford-navy);
+}
+
+.alert-punch {
+    background: rgba(230, 57, 70, 0.1);
+    border-left: 4px solid var(--punch-red);
+    color: var(--punch-red);
+}
+
+.alert-honeydew {
+    background: var(--honeydew);
+    border-left: 4px solid var(--frosted-blue);
+    color: var(--oxford-navy);
+}
+
+/* ============================================
+   TABLAS
+   ============================================ */
+
+.table-cerulean thead {
+    background: var(--gradient-primary);
+    color: white;
+}
+
+.table-cerulean tbody tr:hover {
+    background: rgba(168, 218, 220, 0.2);
+}
+
+.table-frosted thead {
+    background: var(--frosted-blue);
+    color: var(--oxford-navy);
+}
+
+.table-frosted tbody tr:hover {
+    background: rgba(168, 218, 220, 0.3);
+}
+
+/* ============================================
+   NAVBAR PERSONALIZADO
+   ============================================ */
+
+.navbar-cerulean {
+    background: var(--gradient-primary) !important;
+}
+
+.navbar-oxford {
+    background: var(--oxford-navy) !important;
+}
+
+/* ============================================
+   FORMULARIOS
+   ============================================ */
+
+.form-control:focus {
+    border-color: var(--cerulean);
+    box-shadow: 0 0 0 0.2rem rgba(69, 123, 157, 0.25);
+}
+
+.form-select:focus {
+    border-color: var(--cerulean);
+    box-shadow: 0 0 0 0.2rem rgba(69, 123, 157, 0.25);
+}
+
+/* ============================================
+   UTILIDADES
+   ============================================ */
+
+.bg-cerulean {
+    background: var(--cerulean) !important;
+    color: white !important;
+}
+
+.bg-frosted {
+    background: var(--frosted-blue) !important;
+    color: var(--oxford-navy) !important;
+}
+
+.bg-oxford {
+    background: var(--oxford-navy) !important;
+    color: white !important;
+}
+
+.bg-punch {
+    background: var(--punch-red) !important;
+    color: white !important;
+}
+
+.bg-honeydew {
+    background: var(--honeydew) !important;
+    color: var(--oxford-navy) !important;
+}
+
+.text-cerulean {
+    color: var(--cerulean) !important;
+}
+
+.text-frosted {
+    color: var(--frosted-blue) !important;
+}
+
+.text-oxford {
+    color: var(--oxford-navy) !important;
+}
+
+.text-punch {
+    color: var(--punch-red) !important;
+}
+
+.border-cerulean {
+    border-color: var(--cerulean) !important;
+}
+
+.border-frosted {
+    border-color: var(--frosted-blue) !important;
+}
+
+.border-punch {
+    border-color: var(--punch-red) !important;
+}
+
+/* ============================================
+   ANIMACIONES
+   ============================================ */
+
+@keyframes pulse-cerulean {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(69, 123, 157, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(69, 123, 157, 0);
+    }
+}
+
+.pulse-cerulean {
+    animation: pulse-cerulean 2s infinite;
+}
+
+@keyframes pulse-punch {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(230, 57, 70, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(230, 57, 70, 0);
+    }
+}
+
+.pulse-punch {
+    animation: pulse-punch 2s infinite;
+}
+
+/* ============================================
+   DASHBOARD ESPECÍFICO
+   ============================================ */
+
+.pos-card.status-error {
+    background: var(--gradient-danger);
+}
+
+.pos-card.status-warning {
+    background: var(--gradient-warning);
+}
+
+.pos-card.status-success {
+    background: var(--gradient-success);
+}
+
+.pos-card.status-loading {
+    background: linear-gradient(135deg, var(--frosted-blue), var(--honeydew));
+    color: var(--oxford-navy);
+}
+
+.server-card {
+    border-left: 5px solid var(--cerulean);
+    background: linear-gradient(to right, var(--honeydew), white);
+}
+
+/* ============================================
+   TIMELINE (AUDITORÍA)
+   ============================================ */
+
+.marker-dot {
+    border-color: var(--cerulean) !important;
+}
+
+.marker-line {
+    background: var(--frosted-blue) !important;
+}
+
+.timeline-content:hover {
+    border-left-color: var(--cerulean) !important;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 768px) {
+    .btn-cerulean,
+    .btn-frosted,
+    .btn-punch {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+    }
+}

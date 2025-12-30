@@ -2,7 +2,7 @@
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Gestión de Terminales POS</h2>
-        <button class="btn btn-primary" onclick="abrirModalCrear()">
+        <button class="btn btn-cerulean" onclick="abrirModalCrear()">
             <i class="bi bi-hdd-network"></i> Nueva Terminal
         </button>
     </div>
@@ -15,7 +15,7 @@
                 data-show-columns="true" data-show-toggle="true" data-icons-prefix="bi" data-icons="icons"
                 class="table table-hover table-bordered">
 
-                <thead class="table-light">
+                <thead class="table-light bg-cerulean text-white">
                     <tr>
                         <th data-field="name" data-sortable="true" data-sort-name="name" data-sort-order="desc">Nombre
                         </th>
@@ -34,7 +34,7 @@
     <div class="modal fade" id="modalTerminal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header">
+                <div class="modal-header card-header-cerulean">
                     <h5 class="modal-title" id="modalTitulo">Terminal</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
@@ -100,8 +100,8 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" onclick="guardarTerminal()">Guardar</button>
+                    <button type="button" class="btn btn-frosted" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-cerulean" onclick="guardarTerminal()">Guardar</button>
                 </div>
             </div>
         </div>

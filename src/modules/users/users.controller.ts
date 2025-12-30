@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import * as userService from './users.service';
 import { getAllBranches } from '../branches/branches.service';
+import * as auditService from '../audit/audit.service';
 
 export const renderUserList = async (req: Request, res: Response) => {
     try {
@@ -40,6 +41,18 @@ export const create = async (req: Request, res: Response) => {
 
         // Pasamos currentUser.id como creador
         await userService.createUser({ username, role, branch_id }, password, currentUser.id);
+
+        // Auditoría
+        auditService.logAction(
+            currentUser.id,
+            currentUser.branch_id,
+            'CREATE',
+            'USER',
+            null,
+            `Usuario creado: ${username} (${role})`,
+            req.ip
+        );
+
         res.json({ success: true });
     } catch (error: any) {
         res.status(400).json({ success: false, error: error.message });
@@ -56,6 +69,18 @@ export const update = async (req: Request, res: Response) => {
         const { username, password, role, branch_id } = req.body;
 
         await userService.updateUser(Number(id), { username, role, branch_id }, password, currentUser.id);
+
+        // Auditoría
+        auditService.logAction(
+            currentUser.id,
+            currentUser.branch_id,
+            'UPDATE',
+            'USER',
+            Number(id),
+            `Usuario actualizado: ${username} (${role})`,
+            req.ip
+        );
+
         res.json({ success: true });
     } catch (error: any) {
         res.status(400).json({ success: false, error: error.message });
@@ -80,6 +105,18 @@ export const remove = async (req: Request, res: Response) => {
         }
 
         await userService.deleteUser(targetId);
+
+        // Auditoría
+        auditService.logAction(
+            currentUser.id,
+            currentUser.branch_id,
+            'DELETE',
+            'USER',
+            targetId,
+            `Usuario eliminado ID: ${targetId}`,
+            req.ip
+        );
+
         res.json({ success: true });
     } catch (error: any) {
         res.status(400).json({ success: false, error: error.message });

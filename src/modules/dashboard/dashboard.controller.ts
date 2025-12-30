@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import * as dashService from './dashboard.service';
 import { mainDbPool } from '../../shared/db/main.db';
+import * as auditService from '../audit/audit.service';
 
 // Renderizar Vista Principal
 export const renderDashboard = (req: Request, res: Response) => {
@@ -66,9 +67,24 @@ export const getJobs = async (req: Request, res: Response) => {
 // API: Ejecutar Job
 export const runJob = async (req: Request, res: Response) => {
     try {
+        const currentUser = res.locals.user;
         const { id } = req.params;
         const { jobName } = req.body;
-        await dashService.executeJob(Number(id), jobName);
+        const terminalId = Number(id);
+
+        await dashService.executeJob(terminalId, jobName);
+
+        // Auditoría
+        auditService.logAction(
+            currentUser.id,
+            currentUser.branch_id,
+            'EXECUTE',
+            'JOB',
+            terminalId,
+            `Job ejecutado: ${jobName} en terminal ID ${terminalId}`,
+            req.ip
+        );
+
         res.json({ success: true });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
 };
@@ -76,9 +92,24 @@ export const runJob = async (req: Request, res: Response) => {
 // API: Detener Job
 export const stopJob = async (req: Request, res: Response) => {
     try {
+        const currentUser = res.locals.user;
         const { id } = req.params;
         const { jobName } = req.body;
-        await dashService.stopJob(Number(id), jobName);
+        const terminalId = Number(id);
+
+        await dashService.stopJob(terminalId, jobName);
+
+        // Auditoría
+        auditService.logAction(
+            currentUser.id,
+            currentUser.branch_id,
+            'STOP',
+            'JOB',
+            terminalId,
+            `Job detenido: ${jobName} en terminal ID ${terminalId}`,
+            req.ip
+        );
+
         res.json({ success: true });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
 };
