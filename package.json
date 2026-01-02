@@ -14,7 +14,9 @@
   },
   "scripts": {
     "start": "node dist/app.js",
-    "build": "tsc",
-    "dev": "nodemon src/app.ts"
+    "build": "tsc && npm run copy-views",
+    "copy-views": "xcopy /E /I /Y src\\views dist\\views",
+    "dev": "nodemon src/app.ts",
+    "clean": "if exist dist rmdir /s /q dist"
   }
 }
